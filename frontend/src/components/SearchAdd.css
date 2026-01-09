@@ -1,0 +1,19 @@
+.pop-item {
+    font-size: 14px;
+    color: #161616;
+    padding:5px;
+}
+
+.pop-item:hover{
+    cursor: pointer;
+    background: #07C160;
+    color: white;
+    border-radius: 3px;
+}
+
+.chat-modal-btn {
+    width: 80px;
+    height: 28px;
+    font-size: 14px;
+    border-radius: 3px;
+}

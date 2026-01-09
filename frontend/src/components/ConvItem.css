@@ -1,0 +1,15 @@
+.conv-item:hover{
+    background-color: #EDEDED;
+}
+
+.conv-item.selected {
+    background-color: #DEDEDE;
+}
+
+.conv-item.unselected {
+    background-color: #F7F7F7;
+}
+
+.conv-item.unselected:hover {
+    background-color: #EDEDED;
+}

@@ -1,0 +1,21 @@
+app-config:
+  profile: dev
+  stop-timeout: 1s
+  engine-server-addr: '192.168.1.155:5077'
+  api-gw-addr: 'http://192.168.1.155:6000'
+
+log-config:
+  level: trace
+  colorful-std: true
+  file-path: ./.logs
+  max-file-size: 10
+  max-backup: 3
+  history-days: 7
+  compress: true
+
+http-req-config:
+  max-conn: 16
+  max-idle-conn: 4
+  conn-idle-timeout: 30s
+  request-timeout: 10s
+  response-timeout: 10s
