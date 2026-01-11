@@ -525,11 +525,12 @@ func (c *Client) sendPingFrame() error {
 }
 
 func (c *Client) doReconnect() {
-	if !c.connecting.CompareAndSwap(false, true) {
+	// 主动断开, 无需重连
+	if c.activeDis.Load() {
 		return
 	}
 
-	if c.activeDis.Load() {
+	if !c.connecting.CompareAndSwap(false, true) {
 		return
 	}
 
