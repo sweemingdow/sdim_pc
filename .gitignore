@@ -15,6 +15,7 @@
 
 *.log
 logs/
+.logs/
 bin/
 
 node_modules/
