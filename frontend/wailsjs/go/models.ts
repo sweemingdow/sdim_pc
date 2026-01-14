@@ -1,4 +1,4 @@
-export namespace conv {
+export namespace chat {
 	
 	export class ConvItem {
 	    convId?: string;
@@ -16,6 +16,7 @@ export namespace conv {
 	    cts?: number;
 	    uts?: number;
 	    recentlyMsgs: preinld.Msg[];
+	    hasMore: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new ConvItem(source);
@@ -38,6 +39,7 @@ export namespace conv {
 	        this.cts = source["cts"];
 	        this.uts = source["uts"];
 	        this.recentlyMsgs = this.convertValues(source["recentlyMsgs"], preinld.Msg);
+	        this.hasMore = source["hasMore"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -107,6 +109,10 @@ export namespace preinld {
 	    megSeq: number;
 	    cts: number;
 	    state: number;
+	    lastFailReason: string;
+	    retryTimes: number;
+	    isSelf: boolean;
+	    clientId: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Msg(source);
@@ -125,6 +131,10 @@ export namespace preinld {
 	        this.megSeq = source["megSeq"];
 	        this.cts = source["cts"];
 	        this.state = source["state"];
+	        this.lastFailReason = source["lastFailReason"];
+	        this.retryTimes = source["retryTimes"];
+	        this.isSelf = source["isSelf"];
+	        this.clientId = source["clientId"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -147,10 +157,13 @@ export namespace preinld {
 	}
 	
 	export class MsgSendData {
+	    sender?: string;
+	    convId?: string;
 	    receiver?: string;
 	    chatType?: number;
 	    ttl?: number;
 	    msgContent?: MsgContent;
+	    clientId?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new MsgSendData(source);
@@ -158,10 +171,13 @@ export namespace preinld {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sender = source["sender"];
+	        this.convId = source["convId"];
 	        this.receiver = source["receiver"];
 	        this.chatType = source["chatType"];
 	        this.ttl = source["ttl"];
 	        this.msgContent = this.convertValues(source["msgContent"], MsgContent);
+	        this.clientId = source["clientId"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -181,6 +197,27 @@ export namespace preinld {
 		    }
 		    return a;
 		}
+	}
+
+}
+
+export namespace userapi {
+	
+	export class UserProfile {
+	    uid?: string;
+	    nickname?: string;
+	    avatar?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UserProfile(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.uid = source["uid"];
+	        this.nickname = source["nickname"];
+	        this.avatar = source["avatar"];
+	    }
 	}
 
 }

@@ -1,0 +1,13 @@
+.msg-item-time {
+    color: #9E9E9E;
+    font-size: 12px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+}
+
+.msg-item-outer {
+    display: flex;
+    flex-direction: column;
+    margin-top: 32px;
+    box-sizing: border-box;
+}

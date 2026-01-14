@@ -12,7 +12,7 @@ const TitleSetting = ({setting}) => {
             if (title) {
                 return {text: title, color: "#161616"}
             }
-            return ""
+            return {text: "", color: "#161616"}
         } else {
             return {text: "连接失败", color: "red"}
         }

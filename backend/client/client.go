@@ -11,7 +11,7 @@ import (
 	"net"
 	"sdim_pc/backend/client/frm"
 	"sdim_pc/backend/mylog"
-	preinld2 "sdim_pc/backend/preinld"
+	preinld "sdim_pc/backend/preinld"
 	"sdim_pc/backend/user"
 	"sdim_pc/backend/utils"
 	"sync"
@@ -67,6 +67,14 @@ func NewClient(addr string, eventCb ClientEventCallback) (*Client, error) {
 
 // Connect 连接到服务器，并在1秒内等待ConnAck，否则超时断连
 func (c *Client) Connect(uid string, cType uint8) error {
+	c.mu.Lock()
+	conn := c.conn
+	if conn != nil {
+		_ = conn.Close()
+	}
+	user.Reset()
+	c.mu.Unlock()
+
 	c.connecting.Store(true)
 
 	conn, err := net.Dial("tcp", c.addr)
@@ -87,7 +95,7 @@ func (c *Client) Connect(uid string, cType uint8) error {
 	}
 
 	// 设置读取超时为1秒
-	err = c.conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+	err = c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	if err != nil {
 		_ = c.conn.Close()
 		return fmt.Errorf("send conn frame failed: %w", err)
@@ -114,14 +122,14 @@ func (c *Client) Connect(uid string, cType uint8) error {
 	}
 
 	// 解析 conn_ack
-	var caf preinld2.ConnAckFrame
+	var caf preinld.ConnAckFrame
 	err = json.Unmarshal(frame.Payload.Body, &caf)
 	if err != nil {
 		_ = c.conn.Close()
 		return fmt.Errorf("parse conn ack body failed: %w", err)
 	}
 
-	if !preinld2.IsOk(caf.ErrCode) {
+	if !preinld.IsOk(caf.ErrCode) {
 		return fmt.Errorf("conn ack frame not ok, errCode=%d, errDesc=%s", caf.ErrCode, caf.ErrDesc)
 	}
 
@@ -200,7 +208,7 @@ func (c *Client) Stop(ctx context.Context) ([]*frm.Frame, error) {
 	}
 }
 
-func (c *Client) SendMsgFrame(msd *preinld2.MsgSendData) error {
+func (c *Client) SendMsgFrame(msd preinld.MsgSendData) error {
 	if err := c.nextIfCan(); err != nil {
 		return err
 	}
@@ -210,14 +218,14 @@ func (c *Client) SendMsgFrame(msd *preinld2.MsgSendData) error {
 	mylog.GetLogger().Debug().Msgf("sender=%s, receiver=%s, chatType=%d, msgContent:%+v, start send msg frame",
 		sender, msd.Receiver, msd.ChatType, *msd.MsgContent)
 
-	sf := preinld2.SendFrame{
+	sf := preinld.SendFrame{
 		Sender:         sender,
 		Receiver:       msd.Receiver,
 		ChatType:       msd.ChatType,
 		SendMills:      time.Now().UnixMilli(),
 		Sign:           "",
 		Ttl:            msd.Ttl,
-		ClientUniqueId: utils.RandStr(32),
+		ClientUniqueId: msd.ClientId,
 		MsgContent:     msd.MsgContent,
 	}
 
@@ -237,7 +245,11 @@ func (c *Client) SendMsgFrame(msd *preinld2.MsgSendData) error {
 
 	_, err = c.conn.Write(frmBuf)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Client) loopStart() {
@@ -300,7 +312,7 @@ func (c *Client) readLoop() {
 }
 
 func (c *Client) heartbeatLoop() {
-	ticker := time.NewTicker(preinld2.HeartbeatInterval)
+	ticker := time.NewTicker(preinld.HeartbeatInterval)
 	defer ticker.Stop()
 
 	for !c.interrupted.Load() {
@@ -477,7 +489,7 @@ func (c *Client) isClosed() bool {
 func (c *Client) sendConnFrame(uid string, cType uint8) error {
 	mylog.GetLogger().Debug().Msgf("uid=%s, cType=%d, start send conn frame", uid, cType)
 
-	cf := preinld2.ConnFrame{
+	cf := preinld.ConnFrame{
 		Uid:     uid,
 		CType:   cType,
 		TsMills: time.Now().UnixMilli(),
@@ -525,39 +537,39 @@ func (c *Client) sendPingFrame() error {
 }
 
 func (c *Client) doReconnect() {
-	if !c.connecting.CompareAndSwap(false, true) {
-		return
-	}
-
-	if c.activeDis.Load() {
-		return
-	}
-
-	c.interrupted.Store(true)
-
-	c.connected.Store(false)
-
-	if c.isClosed() {
-		return
-	}
-
-	c.mu.Lock()
-	cn := c.conn
-	c.mu.Unlock()
-
-	if cn != nil {
-		_ = cn.Close()
-	}
-
-	go func() {
-		defer func() {
-			c.connecting.Store(false)
-		}()
-
-		lg := mylog.GetLogger()
-
-		for times := 1; times <= preinld2.ReconnectMaxRetryTimes; times++ {
-			lg.Info().Msgf("client reconnecting, retryTimes=%d", times)
-		}
-	}()
+	//if !c.connecting.CompareAndSwap(false, true) {
+	//	return
+	//}
+	//
+	//if c.activeDis.Load() {
+	//	return
+	//}
+	//
+	//c.interrupted.Store(true)
+	//
+	//c.connected.Store(false)
+	//
+	//if c.isClosed() {
+	//	return
+	//}
+	//
+	//c.mu.Lock()
+	//cn := c.conn
+	//c.mu.Unlock()
+	//
+	//if cn != nil {
+	//	_ = cn.Close()
+	//}
+	//
+	//go func() {
+	//	defer func() {
+	//		c.connecting.Store(false)
+	//	}()
+	//
+	//	lg := mylog.GetLogger()
+	//
+	//	for times := 1; times <= preinld.ReconnectMaxRetryTimes; times++ {
+	//		lg.Info().Msgf("client reconnecting, retryTimes=%d", times)
+	//	}
+	//}()
 }

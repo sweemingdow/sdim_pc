@@ -54,8 +54,7 @@ const ConvItem = ({convItem, idx, onClick}) => {
             <img id="ci-row-img"
                  src={convItem.icon}
                  style={{
-                     width: 42, height: 42, flexShrink: 0, // backgroundColor: "cyan"
-
+                     width: 42, height: 42, flexShrink: 0,
                  }}>
             </img>
 

@@ -8,47 +8,37 @@ import {EventsOn} from "../../wailsjs/runtime/runtime.js";
 *
 * 父组件通过: useRef + ref 来调用
 * */
-const ConvList = forwardRef(({setMaskShow, setSelectedConvItem}, ref) => {
-    const [convItems, setConvItems] = useState([])
+const ConvList = forwardRef(({setMaskShow, setSelectedConvItem,convItems}, ref) => {
+    // const [convItems, setConvItems] = useState([])
 
     // 暴露给父组件的方法
-    useImperativeHandle(ref, () => ({
-        // 设置会话列表
-        setConvItemsExternal: (items) => {
-            setConvItems(items)
-        },
-    }))
+    // useImperativeHandle(ref, () => ({
+    //     // 设置会话列表
+    //     setConvItemsExternal: (items) => {
+    //         setConvItems(items)
+    //     },
+    // }))
 
-    useEffect(() => {
-        const unSubConvListUpdateEvents = EventsOn("event_backend:conv_list_update", items => {
-            console.log(`receive conv list update event, items=${JSON.stringify(items)}`)
-            setConvItems(items)
-        })
 
-        return () => {
-            unSubConvListUpdateEvents()
-        }
-    }, [])
-
-    const handleConvItemClick = (convItem) => {
+    const handleConvItemClick = (idx, convItem) => {
         // 隐藏遮罩
-        if (setMaskShow) {
-            setMaskShow(false)
-        }
+        // if (setMaskShow) {
+        //     setMaskShow(false)
+        // }
         // 通知父组件选中的会话
         if (setSelectedConvItem) {
-            setSelectedConvItem(convItem)
+            setSelectedConvItem(idx, convItem)
         }
     }
 
     return (<div>
-            {convItems.map((item, idx) => (<ConvItem
-                    key={item.convId}
-                    idx={idx}
-                    convItem={item}
-                    onClick={() => handleConvItemClick(item)}
-                />))}
-        </div>)
+        {convItems.map((item, idx) => (<ConvItem
+            key={item.convId}
+            idx={idx}
+            convItem={item}
+            onClick={() => handleConvItemClick(idx, item)}
+        />))}
+    </div>)
 })
 
 export default ConvList

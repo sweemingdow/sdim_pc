@@ -3,7 +3,9 @@ package main
 import (
 	"embed"
 	"flag"
+	"sdim_pc/backend/binder/msgbinder"
 	"sdim_pc/backend/binder/syncbinder"
+	"sdim_pc/backend/binder/userbinder"
 	"sdim_pc/backend/config"
 	"sdim_pc/backend/mylog"
 	"sdim_pc/backend/utils"
@@ -45,11 +47,12 @@ func main() {
 
 	// Create application with options
 	err = wails.Run(&options.App{
-		Title:     "Sdim For PC",
-		Width:     1024,
-		Height:    820,
-		MinWidth:  650,
-		MinHeight: 550,
+		Title:         "Sdim For PC",
+		Width:         960,
+		Height:        768,
+		MinWidth:      960,
+		MinHeight:     768,
+		DisableResize: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
@@ -62,7 +65,9 @@ func main() {
 			[]interface{}{
 				app,
 			},
-			syncbinder.NewSyncBinder(app.ci),
+			syncbinder.NewSyncBinder(app.ci, app.cm),
+			userbinder.NewUserBinder(app.ui),
+			msgbinder.NewMsgBinder(app.mi, app.cm),
 		),
 	})
 

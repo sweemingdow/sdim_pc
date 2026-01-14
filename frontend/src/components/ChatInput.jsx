@@ -14,9 +14,22 @@ const ChatInput = ({send}) => {
         setInputValue(val)
     }
 
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            if (e.shiftKey) {
+                // Shift + Enter：允许默认行为（换行）
+                return;
+            }
+
+            // 仅 Enter：阻止换行，触发发送
+            e.preventDefault();
+            onSendMsg();
+        }
+    };
+
     const onSendMsg = (_) => {
         const msd = {
-            receiver: "test_u2",
             chatType: 1,
             ttl: 0,
             msgContent: {
@@ -27,12 +40,13 @@ const ChatInput = ({send}) => {
             }
         }
 
+        setInputValue("")
         sendMsg(msd)
     }
 
     return (<div style={{
-        flex: 2,
         width: '100%',
+        height: 180,
         backgroundColor: "cyan",
         display: "flex",
         flexDirection: "column",
@@ -68,6 +82,7 @@ const ChatInput = ({send}) => {
                     resize: 'none'
                 }}
                 value={value}
+                onKeyDown={handleKeyDown}
                 onChange={onInputValueChanged}
             />
             <Button

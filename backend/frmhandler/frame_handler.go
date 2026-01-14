@@ -4,26 +4,28 @@ import (
 	"context"
 	"github.com/panjf2000/ants/v2"
 	"sdim_pc/backend/api/convapi"
+	"sdim_pc/backend/chat"
 	"sdim_pc/backend/client/frm"
-	"sdim_pc/backend/conv"
 	"sdim_pc/backend/mylog"
 	"sdim_pc/backend/preinld"
-	"sdim_pc/backend/user"
 	"sdim_pc/backend/utils/parser/json"
 	"sync/atomic"
-	"time"
 )
 
 type FrameHandler struct {
 	frmCh  <-chan *frm.Frame
 	stopCh chan struct{}
-	cm     *conv.ConvManager
+	cm     *chat.ConvManager
 	pool   *ants.Pool
 	closed atomic.Bool
 	ca     *convapi.ConvApi
 }
 
-func NewFrameHandler(frmCh <-chan *frm.Frame, cm *conv.ConvManager, ca *convapi.ConvApi) *FrameHandler {
+func NewFrameHandler(
+	frmCh <-chan *frm.Frame,
+	cm *chat.ConvManager,
+	ca *convapi.ConvApi,
+) *FrameHandler {
 	pool, _ := ants.NewPool(
 		8,
 		ants.WithMaxBlockingTasks(128),
@@ -69,15 +71,19 @@ func (fh *FrameHandler) receiveFrame() {
 
 			mylog.GetLogger().Trace().Msgf("reveive frame data, frameDesc:%s, frameData:%+v", frm.FrameType2desc(frame.Header.Ftype), frame)
 
-			fh.handleFrame(frame)
+			fh.submitTask(func() {
+				fh.handleFrame(frame)
+			})
 		}
 	}
 }
 
 func (fh *FrameHandler) handleFrame(frame *frm.Frame) {
 	lg := mylog.GetLogger()
+
+	ft := frame.Header.Ftype
 	// 发送的回帧
-	if frame.Header.Ftype == frm.SendAck {
+	if ft == frm.SendAck {
 		var saf preinld.SendFrameAck
 		err := json.Parse(frame.Payload.Body, &saf)
 		if err != nil {
@@ -87,30 +93,37 @@ func (fh *FrameHandler) handleFrame(frame *frm.Frame) {
 
 		lg.Trace().Msgf("parse send frame ack body success, data=%+v", saf.Data)
 
+		// 模拟发送耗时
+		//time.Sleep(2500 * time.Millisecond)
+
 		if !preinld.IsOk(saf.ErrCode) {
 			lg.Warn().Msgf("send frame ack errCode is not ok, errCode=%d, errDesc:%s", saf.ErrCode, saf.ErrDesc)
+			items, idx, ok := fh.cm.UpdateMsgWhenSentFailed(saf)
+			if ok {
+				fh.cm.EmitConvListUpdateEvent(items, idx)
+			}
 			return
 		}
 
-		// 本地会话不存在, 更新一次会话列表
-		if !fh.cm.Exists(saf.Data.ConvId) {
-			// 更新会话列表
-			fh.submitTask(func() {
-				time.Sleep(100 * time.Millisecond)
-
-				convItems, ie := fh.ca.RecentlyConvList(user.GetUid())
-				if ie != nil {
-					lg.Error().Stack().Err(ie).Msg("call active conv list failed")
-					return
-				}
-
-				contents, _ := json.Fmt(convItems)
-				lg.Trace().Msgf("update conv list success, items:%s", string(contents))
-
-				fh.cm.ReplaceConvList(convItems)
-			})
+		items, idx, ok := fh.cm.UpdateMsgWhenSentSuccess(saf.Data)
+		if ok {
+			fh.cm.EmitConvListUpdateEvent(items, idx)
+		}
+	} else if ft == frm.Forward { // 转发给自己的消息帧
+		var ffb preinld.ForwardFrameBody
+		err := json.Parse(frame.Payload.Body, &ffb)
+		if err != nil {
+			lg.Error().Stack().Err(err).Msg("parse forward frame body failed")
+			return
 		}
 
+		// todo 接受到转发消息回帧给服务端
+
+		// 修改会话 & 消息
+		items, idx, ok := fh.cm.InsertMsgAfterReceived(&ffb)
+		if ok {
+			fh.cm.EmitConvListUpdateEvent(items, idx)
+		}
 	}
 }
 

@@ -2,16 +2,19 @@ package main
 
 import (
 	"context"
+	"errors"
 	"github.com/rs/zerolog"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"sdim_pc/backend/api/convapi"
+	"sdim_pc/backend/api/msgapi"
+	"sdim_pc/backend/api/userapi"
 	"sdim_pc/backend/appctx"
+	"sdim_pc/backend/chat"
 	"sdim_pc/backend/client"
 	"sdim_pc/backend/config"
-	"sdim_pc/backend/conv"
 	"sdim_pc/backend/frmhandler"
 	"sdim_pc/backend/mylog"
-	preinld2 "sdim_pc/backend/preinld"
+	preinld "sdim_pc/backend/preinld"
 	"sdim_pc/backend/user"
 	"sdim_pc/backend/utils/unet"
 	"time"
@@ -22,8 +25,10 @@ type App struct {
 	ctx context.Context
 	cli *client.Client
 	fh  *frmhandler.FrameHandler
-	cm  *conv.ConvManager
+	cm  *chat.ConvManager
 	ci  *convapi.ConvApi
+	ui  *userapi.UserApi
+	mi  *msgapi.MsgApi
 	cfg config.Config
 	lg  *zerolog.Logger
 }
@@ -34,8 +39,12 @@ func NewApp(cfg config.Config) (*App, error) {
 		return nil, err
 	}
 
-	cm := conv.NewConvManager()
-	ci := convapi.NewConvApi(cfg, unet.NewHttpSender(cfg.HttpReqCfg))
+	cm := chat.NewConvManager()
+	sender := unet.NewHttpSender(cfg.HttpReqCfg)
+
+	ci := convapi.NewConvApi(cfg, sender)
+	ui := userapi.NewUserApi(cfg, sender)
+	mi := msgapi.NewMsgApi(cfg, sender)
 
 	fh := frmhandler.NewFrameHandler(cli.GetFrameChan(), cm, ci)
 
@@ -45,6 +54,8 @@ func NewApp(cfg config.Config) (*App, error) {
 		fh:  fh,
 		cm:  cm,
 		ci:  ci,
+		ui:  ui,
+		mi:  mi,
 		lg:  mylog.GetLogger(),
 	}
 	appctx.RegisterCtcProvider(app)
@@ -103,12 +114,24 @@ func (a *App) WailsCtx() context.Context {
 func (a *App) Conn2Engine(uid string) error {
 	a.lg.Debug().Msgf("uid=%s connecting to engine", uid)
 
-	err := a.cli.Connect(uid, preinld2.Pc)
+	err := a.cli.Connect(uid, preinld.Pc)
 	if err != nil {
 		a.lg.Error().Stack().Err(err).Msgf("uid=%s connect to engine failed", uid)
 		return err
 	}
 
+	/*// 拉取用户资料
+	up, err := a.ui.UserProfile(uid)
+	if err != nil {
+		a.lg.Error().Stack().Err(err).Msgf("fetch user profile failed afater connected, uid=%s", uid)
+		return nil
+	}
+
+	user.ModifyUnitInfo(
+		up.Nickname,
+		up.Avatar,
+	)
+	*/
 	return nil
 }
 
@@ -127,6 +150,17 @@ func (a *App) Disconnect() error {
 	return nil
 }
 
-func (a *App) SendMsg(msd *preinld2.MsgSendData) error {
-	return a.cli.SendMsgFrame(msd)
+func (a *App) SendMsg(msd *preinld.MsgSendData) error {
+	convItems, idx, clientMsgId, ok := a.cm.InsertMsgWhileSend(*msd)
+	if !ok {
+		return errors.New("can not found conv with id:" + msd.ConvId)
+	}
+
+	// 通知js, 会话更新(消息发送中)
+	a.cm.EmitConvListUpdateEvent(convItems, idx)
+
+	_msd := *msd
+	_msd.ClientId = clientMsgId
+
+	return a.cli.SendMsgFrame(_msd)
 }

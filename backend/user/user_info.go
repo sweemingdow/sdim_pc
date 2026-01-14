@@ -12,6 +12,8 @@ var (
 
 type UserInfo struct {
 	Uid        string
+	Nickname   string
+	Avatar     string
 	ApiToken   string
 	SignKey    string
 	ClientType uint8
@@ -35,6 +37,14 @@ func Reset() {
 func ModifySignKey(sk string) {
 	rw.Lock()
 	ui.SignKey = sk
+	ui.UTime = time.Now()
+	rw.Unlock()
+}
+
+func ModifyUnitInfo(nickname, avatar string) {
+	rw.Lock()
+	ui.Nickname = nickname
+	ui.Avatar = avatar
 	ui.UTime = time.Now()
 	rw.Unlock()
 }
