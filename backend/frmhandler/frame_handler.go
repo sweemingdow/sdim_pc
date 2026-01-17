@@ -124,6 +124,19 @@ func (fh *FrameHandler) handleFrame(frame *frm.Frame) {
 		if ok {
 			fh.cm.EmitConvListUpdateEvent(items, idx)
 		}
+	} else if ft == frm.ConvUpdate {
+		var cuf preinld.ConvUpdateFrame
+		err := json.Parse(frame.Payload.Body, &cuf)
+		if err != nil {
+			lg.Error().Stack().Err(err).Msg("parse conv update frame failed")
+			return
+		}
+
+		// 修改会话 & 消息
+		items, idx, ok := fh.cm.UpdateWhenConvUpdate(&cuf)
+		if ok {
+			fh.cm.EmitConvListUpdateEvent(items, idx)
+		}
 	}
 }
 

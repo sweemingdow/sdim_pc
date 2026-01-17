@@ -103,6 +103,24 @@ type (
 )
 
 const (
+	ConvTitleChanged = "ConvTitleChanged" // 会话title变更事件
+
+	ConvIconChanged = "ConvIconChanged" // 会话icon变更事件
+
+	ConvLastMsgUpdated = "ConvLastMsgUpdated" // 会话最后一条消息更新事件
+
+	ConvAdded = "ConvAdded" // 会话新增
+)
+
+type (
+	ConvUpdateFrame struct {
+		ConvId string         `json:"convId"`
+		Type   string         `json:"type"` // 会话更新类型
+		Data   map[string]any `json:"data"` // 携带的数据
+	}
+)
+
+const (
 	OK         ErrCode = 0
 	BizErr     ErrCode = 1000
 	ServerErr  ErrCode = 2000

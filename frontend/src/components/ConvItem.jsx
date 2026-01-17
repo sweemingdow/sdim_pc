@@ -21,8 +21,7 @@ import {prettyTime} from '../utils/time_format.js'
 	}
 )
 * */
-const ConvItem = ({convItem, idx, onClick}) => {
-
+const ConvItem = ({convItem, onClick}) => {
     const displayLastMsg = () => {
         // 单聊
         if (convItem.convType === 1) {
@@ -41,31 +40,88 @@ const ConvItem = ({convItem, idx, onClick}) => {
         return ""
     }
 
+    const unreadCountStyle = (cnt) => {
+        let width
+        let display = "flex"
+        let text = cnt + ''
+        if (cnt <= 0) {
+            display = "none"
+        } else if (cnt >= 1 && cnt < 10) {
+            width = 16
+        } else if (cnt >= 10 && cnt < 100) {
+            width = 22
+        } else {
+            width = 28
+            text = '99+'
+        }
+
+        return {
+            style: {
+                ...{
+                    display,
+                    height: 16,
+                    position: "absolute",
+                    backgroundColor: "#FA5151",
+                    right: -8,
+                    top: 8,
+                    borderRadius: 16,
+                    justifyContent: 'center',
+                    alignItems: "center",
+                    fontSize: 10
+                },
+                width
+            },
+            text,
+        }
+    }
+
+    const {style, text} = unreadCountStyle(convItem.unreadCount || 0)
+
     return (<div className={`conv-item ${convItem.selected ? 'selected' : 'unselected'}`}
                  onClick={onClick}
                  style={{
-                     width: '100%', height: 64, boxSizing: "border-box", padding: 11,
+                     width: '100%', height: 64, boxSizing: "border-box",
+                     paddingLeft: 12,
+                     paddingRight: 12,
                  }}>
 
         <div id="ci-row" style={{
             width: '100%', height: '100%', display: "flex", flexDirection: "row"
         }}>
 
-            <img id="ci-row-img"
-                 src={convItem.icon}
-                 style={{
-                     width: 42, height: 42, flexShrink: 0,
-                 }}>
-            </img>
+            <div style={{
+                alignSelf: "center",
+                width: 36,
+                height: '100%',
+                position: "relative",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center"
+            }}>
+                <img id="ci-row-img"
+                     src={convItem.icon}
+                     style={{
+                         width: 36, height: 36, flexShrink: 0,
+                     }}>
+                </img>
+
+                <div style={style}>
+                    {text}
+                </div>
+
+            </div>
 
             <div id="ci-row-r" style={{
                 flex: 1,
                 boxSizing: "border-box",
+                // backgroundColor:"red",
                 width: '100%',
-                height: '100%',
+                // height: '100%',
+                height: 40,
+                marginTop: 12,
                 display: "flex",
                 flexDirection: "column",
-                marginLeft: 11,
+                marginLeft: 12,
                 justifyContent: "space-between",
                 minWidth: 0,
             }}>

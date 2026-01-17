@@ -14,6 +14,7 @@ import {SyncConvList} from "../wailsjs/go/syncbinder/SyncBinder.js";
 import {UserProfile} from "../wailsjs/go/userbinder/UserBinder.js";
 import {FetchNextMsgs} from "../wailsjs/go/msgbinder/MsgBinder.js";
 import {EventsOn} from "../wailsjs/runtime/runtime.js";
+import {ClearUnreadCount} from "../wailsjs/go/convbinder/ConvBinder.js";
 
 function App() {
     const [messageApi, contextHolder] = message.useMessage();
@@ -30,6 +31,11 @@ function App() {
     const [maskShow, setMaskShow] = useState(false)
 
     const [selectedConvItem, setSelectedConvItem] = useState({idx: -1, convItem: null})
+
+    // 未使用ref, 在useEffect中监听事件: event_backend:conv_list_update
+    // 有个闭包陷阱
+    const selectedConvItemRef = useRef({idx: -1, convItem: null});
+
 
     const chatRoomRef = useRef(null);
     const [chatRoomHeight, setChatRoomHeight] = useState(0);
@@ -80,17 +86,30 @@ function App() {
         const unSubConvListUpdateEvents = EventsOn("event_backend:conv_list_update", data => {
             const items = data.items
             const idx = data.idx
+            if (!items) {
+                return
+            }
 
-            messageApi.info(`receive conv list update event, size=${items.length}, idx=${idx}`)
+            // messageApi.info(`receive conv list update event, size=${items.length}, idx=${idx}`)
 
-            console.log(`receive conv list update event, size=${items.length}, idx=${idx}`)
+            const curSelItem = selectedConvItemRef.current;
+            const inRoom = curSelItem.idx !== -1 && curSelItem.convItem && curSelItem.convItem.convId === data.items[idx]?.convId
+
+            console.log(`receive conv list update event, size=${items.length}, idx=${idx}, curSelItem.idx=${curSelItem.idx}, inRoom=${inRoom}`)
 
             setConvItems(items)
 
-            if (idx !== -1) {
-                setCurrMsgs(data.items[idx].recentlyMsgs)
-                onConvItemSelected(idx, data.items[idx])
-                // setSelectedConvItem({idx: idx, convItem: data.items[idx]});
+            const convItem = data.items[idx]
+
+            if (inRoom) {
+                convItem.selected = true
+                const newSelItem = {idx: idx, convItem: convItem}
+                setSelectedConvItem(newSelItem);
+                selectedConvItemRef.current = newSelItem
+
+                setMaskShow(false)
+
+                setCurrMsgs(data.items[idx].recentlyMsgs);
             }
         })
 
@@ -109,7 +128,7 @@ function App() {
 
             setConnState(3)
 
-            messageApi.info(`uid=${uid}, 连接成功`)
+            messageApi.info(`uid=${uid}, connect success`)
 
             const convItems = await SyncConvList(uid)
 
@@ -128,12 +147,15 @@ function App() {
                 const up = await UserProfile(uid)
                 setUserProfile(up)
             } catch (e) {
-                messageApi.error(`获取Profile错误, uid=${uid}, e=${e}`)
+                messageApi.error(`fetch profile failed, uid=${uid}, e=${e}`)
             }
+
+            // 会话连接成功, 显示遮罩
+            setMaskShow(true)
 
         } catch (e) {
             setConnState(4)
-            messageApi.error(`连接错误, uid=${uid}, e=${e}`)
+            messageApi.error(`connect failed, uid=${uid}, e=${e}`)
         }
 
 
@@ -144,9 +166,9 @@ function App() {
         setConnState(1)
 
         Disconnect().then(_ => {
-            messageApi.info(`断连成功`)
+            messageApi.warning(`disconnect success`)
         }).catch(e => {
-            messageApi.error(`断连失败, e=${e}`)
+            messageApi.error(`disconnect failed, e=${e}`)
         })
     }
 
@@ -159,20 +181,24 @@ function App() {
     //     Ttl        int32            `json:"ttl,omitempty"` // 消息过期时间(sec), -1:阅后即焚,0:不过期
     //     MsgContent *msg.MsgContent  `json:"msgContent,omitempty"`
     // }
-    const sendMsg = (msd) => {
-        if (selectedConvItem && selectedConvItem.idx !== -1 && selectedConvItem.idx < convItems.length) {
-            const convItem = convItems[selectedConvItem.idx]
-            msd.receiver = convItem.relationId
-            msd.convId = convItem.convId
+    const sendMsg = async (msd) => {
+        if (!msd.receiver) {
+            if (selectedConvItem && selectedConvItem.idx !== -1 && selectedConvItem.idx < convItems.length) {
+                const convItem = convItems[selectedConvItem.idx];
+                msd.receiver = convItem.relationId;
+                msd.convId = convItem.convId;
+            }
+        }
 
-            messageApi.info(`msd=${JSON.stringify(msd)}`)
+        messageApi.info(`msd=${JSON.stringify(msd)}`);
 
-            SendMsg(msd).then(_ => {
-                messageApi.success(`msg send success, msd=${JSON.stringify(msd)}`)
+        try {
+            await SendMsg(msd)
+            messageApi.success(`msg send success, msd=${JSON.stringify(msd)}`)
 
-            }).catch(e => {
-                messageApi.error(`msg send failed, msg=${msd}, e=${e}`)
-            });
+        } catch (e) {
+            messageApi.error(`msg send failed, msg=${msd}, e=${e}`)
+
         }
     }
 
@@ -194,22 +220,87 @@ function App() {
     }
 
     const onConvItemSelected = (idx, convItem) => {
-        convItem.selected = !convItem.selected
+        // 取消当前选中(反选)
+        const cancelCurSelected = selectedConvItem.idx === idx
 
-        setSelectedConvItem({idx: idx, convItem: convItem});
-        setMaskShow(!convItem.selected)
+        // 上次是否选中了条目
+        const lastSelected = selectedConvItem.idx !== -1
 
-        if (convItem.selected) {
-            messageApi.info(`on conv item selected, idx:${idx}, convId:${convItem.convId}, relationId=${convItem.relationId}, hasMore=${convItem.hasMore}`)
+        if (cancelCurSelected) {// 反选
+            const curSelected = !lastSelected
+            convItem.selected = curSelected
+            const newSelectItem = curSelected ? {idx, convItem} : {idx: -1, convItem: null}
+
+            setSelectedConvItem(newSelectItem);
+            selectedConvItemRef.current = newSelectItem
+
+            setMaskShow(!curSelected)
+
+            if (curSelected) {
+                messageApi.info(`on conv item selected, idx:${idx}, convId:${convItem.convId}, relationId=${convItem.relationId}, hasMore=${convItem.hasMore}`)
+
+                if (idx < convItems.length) {
+                    // messageApi.info(`msgs=${convItems[idx].recentlyMsgs.length} in convId=${convItem.convId}`)
+
+                    const msgs = convItems[idx].recentlyMsgs
+
+                    setCurrMsgs(msgs);
+                }
+
+                // 触发会话清除
+                doClearUnread(convItem.convId)
+            }
+
+        } else { // 不是反选, 清除之前选择的, 选中当前的
+            // selectedConvItem.selected = false
+            convItems.forEach(item => {
+                item.selected = false
+            })
+
+            convItem.selected = true
+            const newSelectItem = {idx, convItem}
+
+            setSelectedConvItem(newSelectItem);
+            selectedConvItemRef.current = newSelectItem
+
+            setMaskShow(false)
+
+            messageApi.info(`on conv item newSelected, idx:${idx}, convId:${convItem.convId}, relationId=${convItem.relationId}, hasMore=${convItem.hasMore}`)
+
+            const copyConvItem = {...convItem}
+            copyConvItem.recentlyMsgs = []
+
+            console.log(`selected convItem:\n${JSON.stringify(copyConvItem)}`)
 
             if (idx < convItems.length) {
-                messageApi.info(`msgs=${convItems[idx].recentlyMsgs.length} in convId=${convItem.convId}`)
+                // messageApi.info(`msgs=${convItems[idx].recentlyMsgs.length} in convId=${convItem.convId}`)
 
                 const msgs = convItems[idx].recentlyMsgs
 
                 setCurrMsgs(msgs);
             }
+
+            // 触发会话清除
+            doClearUnread(convItem.convId)
         }
+    }
+
+    const doClearUnread = (convId) => {
+        console.log(`trigger conv clear unread in convItem selected, convId=${convId}`);
+
+        (async () => {
+            try {
+                await ClearUnreadCount(convId)
+            } catch (e) {
+                messageApi.error(`clear unread failed, convId=${convId}, e=${e}`)
+            }
+        })()
+
+    }
+
+    const getCurSelectedConvId = () => {
+        const curSelItem = selectedConvItemRef.current;
+        return curSelItem && curSelItem.idx !== -1 && curSelItem.convItem.convId
     }
 
     return (<>
@@ -316,7 +407,16 @@ function App() {
                             flexShrink: 0, height: 1, width: "100%", backgroundColor: '#ddd'
                         }}/>
 
-                        <ChatInput send={{sendMsg}}/>
+                        <ChatInput
+                            send={sendMsg}
+                            inputEnabled={connState === 3}
+                            onClick={() => {
+                                const convId = getCurSelectedConvId()
+                                if (convId) {
+                                    doClearUnread(convId);
+                                }
+                            }}
+                        />
 
                     </div>
 

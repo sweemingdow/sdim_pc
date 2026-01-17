@@ -4,8 +4,8 @@ import {Button, Input} from 'antd';
 
 const {TextArea} = Input;
 
-const ChatInput = ({send}) => {
-    const {sendMsg} = send
+const ChatInput = ({send, inputEnabled, onClick}) => {
+    const sendMsg = send
     const [value, setInputValue] = useState('');
 
     const onInputValueChanged = (e) => {
@@ -14,15 +14,28 @@ const ChatInput = ({send}) => {
         setInputValue(val)
     }
 
+    const isValBlank = val => {
+        return !val || String(val).trim() === ''
+    }
+
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
-            if (e.shiftKey) {
-                // Shift + Enter：允许默认行为（换行）
+            if (isValBlank(value)) {
+                if (e.shiftKey) {
+                    // Shift + Enter：允许默认行为（换行）
+                    return;
+                }
+
+                e.preventDefault();
                 return;
             }
 
-            // 仅 Enter：阻止换行，触发发送
+            // 非空, 允许shift+enter 换行
+            if (e.shiftKey) {
+                return;
+            }
+
             e.preventDefault();
             onSendMsg();
         }
@@ -72,6 +85,7 @@ const ChatInput = ({send}) => {
         }}>
 
             <TextArea
+                disabled={!inputEnabled}
                 bordered={false}
                 style={{
                     flex: 1,
@@ -84,7 +98,9 @@ const ChatInput = ({send}) => {
                 value={value}
                 onKeyDown={handleKeyDown}
                 onChange={onInputValueChanged}
+                onClick={onClick}
             />
+
             <Button
                 style={{
                     alignSelf: "flex-end",
@@ -92,7 +108,7 @@ const ChatInput = ({send}) => {
                     height: 32,
                     borderRadius: 4,
                 }}
-                disabled={!value || value.length <= 0}
+                disabled={isValBlank(value)}
                 onClick={onSendMsg}
                 type="primary">发送(S)</Button>
 

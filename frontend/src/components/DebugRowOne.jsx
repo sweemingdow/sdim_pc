@@ -15,7 +15,7 @@ const DebugRowOne = ({rowOne}) => {
 
     const onConnectClick = (e) => {
         if (!uidValue) {
-            messageApi.warning("未输入Uid")
+            messageApi.warning("uid is required")
             return
         }
 

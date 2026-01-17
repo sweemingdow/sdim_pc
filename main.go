@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"flag"
+	"sdim_pc/backend/binder/convbinder"
 	"sdim_pc/backend/binder/msgbinder"
 	"sdim_pc/backend/binder/syncbinder"
 	"sdim_pc/backend/binder/userbinder"
@@ -68,6 +69,7 @@ func main() {
 			syncbinder.NewSyncBinder(app.ci, app.cm),
 			userbinder.NewUserBinder(app.ui),
 			msgbinder.NewMsgBinder(app.mi, app.cm),
+			convbinder.NewConvBinder(app.ci, app.cm),
 		),
 	})
 

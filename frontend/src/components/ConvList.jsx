@@ -1,6 +1,5 @@
 import ConvItem from "./ConvItem.jsx";
-import {forwardRef, useEffect, useImperativeHandle, useState} from "react";
-import {EventsOn} from "../../wailsjs/runtime/runtime.js";
+import {forwardRef} from "react";
 
 /*
 * 父组件调用子组件的方式, 如果是函数式组件必须通过:
@@ -8,7 +7,7 @@ import {EventsOn} from "../../wailsjs/runtime/runtime.js";
 *
 * 父组件通过: useRef + ref 来调用
 * */
-const ConvList = forwardRef(({setMaskShow, setSelectedConvItem,convItems}, ref) => {
+const ConvList = forwardRef(({setMaskShow, setSelectedConvItem, convItems}, ref) => {
     // const [convItems, setConvItems] = useState([])
 
     // 暴露给父组件的方法
@@ -32,12 +31,12 @@ const ConvList = forwardRef(({setMaskShow, setSelectedConvItem,convItems}, ref) 
     }
 
     return (<div>
-        {convItems.map((item, idx) => (<ConvItem
-            key={item.convId}
-            idx={idx}
-            convItem={item}
-            onClick={() => handleConvItemClick(idx, item)}
-        />))}
+        {convItems.map((item, idx) => (
+            <ConvItem
+                key={item.convId}
+                convItem={item}
+                onClick={() => handleConvItemClick(idx, item)}
+            />))}
     </div>)
 })
 

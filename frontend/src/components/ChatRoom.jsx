@@ -58,7 +58,7 @@ import {prettyTime} from "../utils/time_format.js";
 const ChatRoom = forwardRef(({height, msgs, hasMore, fetchNextMsgs}, ref) => {
     // const [chatItems, setChatItems] = useState([])
     const [loading, setLoading] = useState(false)
-    console.log(`chat room hasMore=${hasMore}`)
+    // console.log(`chat room hasMore=${hasMore}`)
 
     const [parentSize, setParentSize] = useState({width: 0, height: 0});
     const parentRef = useRef(null);
@@ -98,7 +98,7 @@ const ChatRoom = forwardRef(({height, msgs, hasMore, fetchNextMsgs}, ref) => {
             // parentRef.current.scrollTo(0, 0);
 
             const {scrollTop} = parentRef.current;
-            console.log(`scrollTop=${scrollTop}`)
+            // console.log(`scrollTop=${scrollTop}`)
 
             if (scrollTop >= -100) {
                 parentRef.current.scrollTo(0, 0);

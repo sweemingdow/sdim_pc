@@ -97,3 +97,29 @@ func (ca *ConvApi) SyncHotConvList(uid string) ([]*chat.ConvItem, error) {
 
 	return nil, fmt.Errorf("respone code not ok, code=%s, subCode=%s, msg=%s", resp.Code, resp.SubCode, resp.Msg)
 }
+
+func (ca *ConvApi) ClearUnread(convId, uid string) error {
+	status, buf, err := ca.reqSender.JsonPost(fmt.Sprintf("%s/conv/clear_unread", ca.host), nil, map[string]string{
+		"conv_id": convId,
+		"uid":     uid,
+	})
+
+	if err != nil {
+		return err
+	}
+	if status != http.StatusOK {
+		return fmt.Errorf("http status not ok, status=%d", status)
+	}
+
+	var resp wrapper.HttpRespWrapper[any]
+	err = wrapper.ParseResp(buf, &resp)
+	if err != nil {
+		return err
+	}
+
+	if !resp.IsOK() {
+		return fmt.Errorf("clear conv unread count failed, convId=%s, uid=%s", convId, uid)
+	}
+
+	return nil
+}

@@ -537,45 +537,8 @@ func (c *Client) sendPingFrame() error {
 }
 
 func (c *Client) doReconnect() {
-<<<<<<< HEAD
-	//if !c.connecting.CompareAndSwap(false, true) {
-	//	return
-	//}
-	//
-	//if c.activeDis.Load() {
-	//	return
-	//}
-	//
-	//c.interrupted.Store(true)
-	//
-	//c.connected.Store(false)
-	//
-	//if c.isClosed() {
-	//	return
-	//}
-	//
-	//c.mu.Lock()
-	//cn := c.conn
-	//c.mu.Unlock()
-	//
-	//if cn != nil {
-	//	_ = cn.Close()
-	//}
-	//
-	//go func() {
-	//	defer func() {
-	//		c.connecting.Store(false)
-	//	}()
-	//
-	//	lg := mylog.GetLogger()
-	//
-	//	for times := 1; times <= preinld.ReconnectMaxRetryTimes; times++ {
-	//		lg.Info().Msgf("client reconnecting, retryTimes=%d", times)
-	//	}
-	//}()
-=======
 	// 主动断开, 无需重连
-	if c.activeDis.Load() {
+	/*if c.activeDis.Load() {
 		return
 	}
 
@@ -606,9 +569,8 @@ func (c *Client) doReconnect() {
 
 		lg := mylog.GetLogger()
 
-		for times := 1; times <= preinld2.ReconnectMaxRetryTimes; times++ {
+		for times := 1; times <= preinld.ReconnectMaxRetryTimes; times++ {
 			lg.Info().Msgf("client reconnecting, retryTimes=%d", times)
 		}
-	}()
->>>>>>> 6cc0ffd10f5504fc64280e5b6f789337b33d81e8
+	}()*/
 }

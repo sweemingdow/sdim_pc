@@ -27,6 +27,7 @@ func NewHttpSender(cfg config.HttpReqConfig) *HttpSender {
 		hCli: &http.Client{
 			Transport: tp,
 		},
+		cfg: cfg,
 	}
 }
 
@@ -44,19 +45,23 @@ func (hs *HttpSender) JsonPost(host string, body any, qp map[string]string) (int
 		return 0, nil, err
 	}
 
-	switch v := body.(type) {
-	case []byte:
-		req, err = http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(v))
-	case string:
-		req, err = http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader([]byte(v)))
-	default:
-		bodies, fe := json.Fmt(v)
-		if fe != nil {
-			err = fe
-			return 0, nil, err
-		}
+	if body != nil {
+		switch v := body.(type) {
+		case []byte:
+			req, err = http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(v))
+		case string:
+			req, err = http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader([]byte(v)))
+		default:
+			bodies, fe := json.Fmt(v)
+			if fe != nil {
+				err = fe
+				return 0, nil, err
+			}
 
-		req, err = http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(bodies))
+			req, err = http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(bodies))
+		}
+	} else {
+		req, err = http.NewRequestWithContext(ctx, http.MethodPost, u, nil)
 	}
 
 	if err != nil {

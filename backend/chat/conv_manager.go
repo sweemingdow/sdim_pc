@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"sdim_pc/backend/appctx"
+	"sdim_pc/backend/mylog"
 	"sdim_pc/backend/preinld"
 	"sdim_pc/backend/user"
 	"sdim_pc/backend/utils"
@@ -15,7 +16,7 @@ import (
 type ConvManager struct {
 	items     []*ConvItem
 	id2idx    map[string]int          // 会话id => idx
-	msgId2msg map[string]*preinld.Msg // 消息id => 消息
+	msgId2msg map[string]*preinld.Msg // 维护消息发送: 消息id => 消息
 	rw        sync.RWMutex
 }
 
@@ -198,7 +199,159 @@ func (cm *ConvManager) InsertMsgAfterReceived(ffb *preinld.ForwardFrameBody) ([]
 	convItem.RecentlyMsgs = append([]*preinld.Msg{lastMsg}, convItem.RecentlyMsgs...)
 
 	return cm.items, idx, true
+}
 
+func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*ConvItem, int, bool) {
+	convId := cuf.ConvId
+	lg := mylog.GetLogger().With().Str("conv_id", cuf.ConvId).Logger()
+	if cuf.Type == preinld.ConvLastMsgUpdated {
+		//ui := user.GetUserInfo()
+
+		lg.Debug().Msgf("start handle conv update event, data=%+v", cuf)
+
+		cm.rw.Lock()
+		defer cm.rw.Unlock()
+
+		idx, ok := cm.id2idx[convId]
+		if !ok {
+			return nil, -1, false
+		}
+
+		convItem := cm.items[idx]
+
+		/*
+			type LastMsg struct {
+				MsgId      int64       `json:"msgId"`
+				SenderInfo SenderInfo  `json:"senderInfo"`
+				Content    *MsgContent `json:"content"`
+			}
+		*/
+		lastMsgMap, ok := cuf.Data["lastMsg"].(map[string]any)
+		if !ok {
+			return nil, -1, false
+		}
+
+		lastActiveTsVal, ok := cuf.Data["lastActiveTs"].(float64)
+		if !ok {
+			return nil, -1, false
+		}
+
+		unreadCountVal, ok := cuf.Data["unreadCount"].(float64)
+		if !ok {
+			return nil, -1, false
+		}
+
+		var msgIdInMap = int64(lastMsgMap["msgId"].(float64))
+
+		convLastMsg := convItem.LastMsg
+		if convLastMsg != nil {
+			// 更新
+			if msgIdInMap == convLastMsg.MsgId {
+				convItem.UnreadCount = int64(unreadCountVal)
+				convItem.Uts = int64(lastActiveTsVal)
+			}
+		}
+
+		return cm.items, idx, true
+	} else if cuf.Type == preinld.ConvAdded { // 会话新增
+		lg.Debug().Msgf("start handle conv add event, data=%+v", cuf)
+
+		myUid := user.GetUid()
+
+		cm.rw.Lock()
+		defer cm.rw.Unlock()
+
+		_, ok := cm.id2idx[convId]
+		if ok {
+			// 更换下图标? 可能要引入版本机制才行
+			return nil, -1, false
+		}
+
+		// 会话不存在, 前插
+		dataMap := cuf.Data
+		icon, _ := dataMap["icon"].(string)
+		title, _ := dataMap["title"].(string)
+		ts, _ := dataMap["ts"].(float64)
+		relationId, _ := dataMap["relationId"].(string)
+		convType, _ := dataMap["convType"].(float64)
+		chatType, _ := dataMap["chatType"].(float64)
+		sender, _ := dataMap["sender"].(string)
+		receiver, _ := dataMap["receiver"].(string)
+		followMsgMap, ok := dataMap["followMsg"].(map[string]any)
+
+		newConvItem := &ConvItem{
+			ConvId:     convId,
+			ConvType:   preinld.ConvType(convType),
+			Title:      title,
+			Icon:       icon,
+			RelationId: relationId,
+			Cts:        int64(ts),
+			Uts:        int64(ts),
+		}
+
+		if ok {
+			msgId, _ := followMsgMap["msgId"].(float64)
+			var senderInfo preinld.SenderInfo
+			if senderInfoMap, ok := followMsgMap["senderInfo"].(map[string]any); ok {
+				nickname, _ := senderInfoMap["nickname"].(string)
+				avatar, _ := senderInfoMap["avatar"].(string)
+
+				senderInfo = preinld.SenderInfo{
+					Nickname: nickname,
+					Avatar:   avatar,
+				}
+			}
+			var (
+				msgType    preinld.MsgType
+				msgContent *preinld.MsgContent
+			)
+
+			if contentMap, ok := followMsgMap["content"].(map[string]any); ok {
+				_msgType, _ := contentMap["type"].(float64)
+				msgType = preinld.MsgType(_msgType)
+				if ok {
+					var content, custom, extra map[string]any
+					content, _ = contentMap["content"].(map[string]any)
+					custom, _ = contentMap["custom"].(map[string]any)
+					extra, _ = contentMap["extra"].(map[string]any)
+					msgContent = &preinld.MsgContent{
+						Type:    msgType,
+						Content: content,
+						Custom:  custom,
+						Extra:   extra,
+					}
+				}
+			}
+
+			lastMsg := &preinld.Msg{
+				MsgId:      int64(msgId),
+				ConvId:     convId,
+				Sender:     sender,
+				Receiver:   receiver,
+				ChatType:   preinld.ChatType(chatType),
+				MsgType:    msgType,
+				Content:    msgContent,
+				SenderInfo: senderInfo,
+				MegSeq:     0,
+				Cts:        int64(ts),
+				State:      uint8(SendOk),
+				IsSelf:     myUid == sender,
+			}
+
+			newConvItem.LastMsg = lastMsg
+			newConvItem.RecentlyMsgs = append([]*preinld.Msg{lastMsg}, newConvItem.RecentlyMsgs...)
+		}
+
+		cm.id2idx = make(map[string]int)
+		cm.items = append([]*ConvItem{newConvItem}, cm.items...)
+		for i, item := range cm.items {
+			cm.id2idx[item.ConvId] = i
+		}
+
+		return cm.items, -1, true
+	}
+
+	return nil, -1, false
 }
 
 func (cm *ConvManager) UpdateMsgWhenSentSuccess(ackBody preinld.SendAckFrameBody) ([]*ConvItem, int, bool) {
@@ -227,6 +380,36 @@ func (cm *ConvManager) UpdateMsgWhenSentSuccess(ackBody preinld.SendAckFrameBody
 	lastMsg.State = uint8(SendOk)
 	lastMsg.MegSeq = ackBody.MsgSeq
 	lastMsg.Cts = ackBody.SendTs
+
+	return cm.items, idx, true
+}
+
+func (cm *ConvManager) ShouldClearUnread(convId string) bool {
+	cm.rw.RLock()
+	defer cm.rw.RUnlock()
+
+	idx, ok := cm.id2idx[convId]
+	if !ok {
+		return false
+	}
+
+	convItem := cm.items[idx]
+
+	return convItem.UnreadCount > 0
+}
+
+func (cm *ConvManager) UpdateAfterClearUnread(convId string) ([]*ConvItem, int, bool) {
+	cm.rw.Lock()
+	defer cm.rw.Unlock()
+
+	idx, ok := cm.id2idx[convId]
+	if !ok {
+		return nil, -1, false
+	}
+
+	convItem := cm.items[idx]
+
+	convItem.UnreadCount = 0
 
 	return cm.items, idx, true
 }

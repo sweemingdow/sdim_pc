@@ -16,6 +16,7 @@ import (
 	"sdim_pc/backend/mylog"
 	preinld "sdim_pc/backend/preinld"
 	"sdim_pc/backend/user"
+	"sdim_pc/backend/utils"
 	"sdim_pc/backend/utils/unet"
 	"time"
 )
@@ -151,6 +152,19 @@ func (a *App) Disconnect() error {
 }
 
 func (a *App) SendMsg(msd *preinld.MsgSendData) error {
+	if msd.ChatType == preinld.GroupChat {
+		if msd.ConvId == "" {
+			return errors.New("convId is required")
+		}
+	}
+
+	if msd.ConvId == "" {
+		clientId := utils.RandStr(32)
+		_msd := *msd
+		_msd.ClientId = clientId
+		return a.cli.SendMsgFrame(_msd)
+	}
+
 	convItems, idx, clientMsgId, ok := a.cm.InsertMsgWhileSend(*msd)
 	if !ok {
 		return errors.New("can not found conv with id:" + msd.ConvId)
