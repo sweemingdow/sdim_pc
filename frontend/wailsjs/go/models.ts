@@ -63,6 +63,29 @@ export namespace chat {
 
 }
 
+export namespace groupbinder {
+	
+	export class StartGroupChatData {
+	    groupName: string;
+	    avatar: string;
+	    limitedNum: string;
+	    membersStr: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new StartGroupChatData(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.groupName = source["groupName"];
+	        this.avatar = source["avatar"];
+	        this.limitedNum = source["limitedNum"];
+	        this.membersStr = source["membersStr"];
+	    }
+	}
+
+}
+
 export namespace preinld {
 	
 	export class SenderInfo {

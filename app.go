@@ -6,6 +6,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"sdim_pc/backend/api/convapi"
+	"sdim_pc/backend/api/groupapi"
 	"sdim_pc/backend/api/msgapi"
 	"sdim_pc/backend/api/userapi"
 	"sdim_pc/backend/appctx"
@@ -30,6 +31,7 @@ type App struct {
 	ci  *convapi.ConvApi
 	ui  *userapi.UserApi
 	mi  *msgapi.MsgApi
+	gi  *groupapi.GroupApi
 	cfg config.Config
 	lg  *zerolog.Logger
 }
@@ -46,6 +48,7 @@ func NewApp(cfg config.Config) (*App, error) {
 	ci := convapi.NewConvApi(cfg, sender)
 	ui := userapi.NewUserApi(cfg, sender)
 	mi := msgapi.NewMsgApi(cfg, sender)
+	gi := groupapi.NewGroupApi(cfg, sender)
 
 	fh := frmhandler.NewFrameHandler(cli.GetFrameChan(), cm, ci)
 
@@ -57,6 +60,7 @@ func NewApp(cfg config.Config) (*App, error) {
 		ci:  ci,
 		ui:  ui,
 		mi:  mi,
+		gi:  gi,
 		lg:  mylog.GetLogger(),
 	}
 	appctx.RegisterCtcProvider(app)

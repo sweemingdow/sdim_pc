@@ -15,6 +15,7 @@ import {UserProfile} from "../wailsjs/go/userbinder/UserBinder.js";
 import {FetchNextMsgs} from "../wailsjs/go/msgbinder/MsgBinder.js";
 import {EventsOn} from "../wailsjs/runtime/runtime.js";
 import {ClearUnreadCount} from "../wailsjs/go/convbinder/ConvBinder.js";
+import {StarGroupChat} from "../wailsjs/go/groupbinder/GroupBinder.js";
 
 function App() {
     const [messageApi, contextHolder] = message.useMessage();
@@ -202,6 +203,19 @@ function App() {
         }
     }
 
+
+    const startGroupChat = async (data) => {
+        messageApi.info(`start group chat, data=${JSON.stringify(data)}`)
+
+        try {
+            await StarGroupChat(data)
+        } catch (e) {
+            const msg = `group chat create failed, data=${JSON.stringify(data)}, e=${e}`
+            console.log(msg)
+            messageApi.error(msg)
+        }
+    }
+
     const fetchNextMsgs = async () => {
         const convId = selectedConvItem && selectedConvItem.convItem.convId
 
@@ -343,7 +357,8 @@ function App() {
                     <div id="b-m" style={{
                         flex: 2.2, minWidth: 0, backgroundColor: '#F7F7F7',
                     }}>
-                        <SearchAdd searchAdd={{messageApi, sendMsg}}/>
+                        <SearchAdd
+                            searchAdd={{messageApi, sendMsg, startGroupChat}}/>
 
                         <ConvList
                             convItems={convItems}

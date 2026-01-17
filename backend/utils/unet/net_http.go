@@ -3,11 +3,13 @@ package unet
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"sdim_pc/backend/config"
 	"sdim_pc/backend/utils/parser/json"
+	"sdim_pc/backend/wrapper"
 )
 
 type HttpSender struct {
@@ -132,4 +134,23 @@ func (hs *HttpSender) encodeUrlWithParam(host string, qp map[string]string) (str
 	}
 
 	return u.String(), nil
+}
+
+func ParseOrError[T any](status int, buf []byte) (wrapper.HttpRespWrapper[T], error) {
+	var resp wrapper.HttpRespWrapper[T]
+
+	if status != http.StatusOK {
+		return resp, fmt.Errorf("http status not ok, status=%d", status)
+	}
+
+	err := wrapper.ParseResp(buf, &resp)
+	if err != nil {
+		return resp, err
+	}
+
+	if resp.IsOK() {
+		return resp, nil
+	}
+
+	return resp, fmt.Errorf("respone code not ok, code=%s, subCode=%s, msg=%s", resp.Code, resp.SubCode, resp.Msg)
 }
