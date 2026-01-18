@@ -85,34 +85,40 @@ function App() {
 
     useEffect(() => {
         const unSubConvListUpdateEvents = EventsOn("event_backend:conv_list_update", data => {
-            const items = data.items
-            const idx = data.idx
-            if (!items) {
-                return
+                const items = data.items
+                const idx = data.idx
+
+                debugger
+                if (!items) {
+                    if (idx === -1) {
+                        setUserProfile({avatar: ""})
+                    }
+                    return;
+                }
+
+                // messageApi.info(`receive conv list update event, size=${items.length}, idx=${idx}`)
+
+                const curSelItem = selectedConvItemRef.current;
+                const inRoom = curSelItem.idx !== -1 && curSelItem.convItem && curSelItem.convItem.convId === data.items[idx]?.convId
+
+                console.log(`receive conv list update event, size=${items.length}, idx=${idx}, curSelItem.idx=${curSelItem.idx}, inRoom=${inRoom}`)
+
+                setConvItems(items)
+
+                const convItem = data.items[idx]
+
+                if (inRoom) {
+                    convItem.selected = true
+                    const newSelItem = {idx: idx, convItem: convItem}
+                    setSelectedConvItem(newSelItem);
+                    selectedConvItemRef.current = newSelItem
+
+                    setMaskShow(false)
+
+                    setCurrMsgs(data.items[idx].recentlyMsgs);
+                }
             }
-
-            // messageApi.info(`receive conv list update event, size=${items.length}, idx=${idx}`)
-
-            const curSelItem = selectedConvItemRef.current;
-            const inRoom = curSelItem.idx !== -1 && curSelItem.convItem && curSelItem.convItem.convId === data.items[idx]?.convId
-
-            console.log(`receive conv list update event, size=${items.length}, idx=${idx}, curSelItem.idx=${curSelItem.idx}, inRoom=${inRoom}`)
-
-            setConvItems(items)
-
-            const convItem = data.items[idx]
-
-            if (inRoom) {
-                convItem.selected = true
-                const newSelItem = {idx: idx, convItem: convItem}
-                setSelectedConvItem(newSelItem);
-                selectedConvItemRef.current = newSelItem
-
-                setMaskShow(false)
-
-                setCurrMsgs(data.items[idx].recentlyMsgs);
-            }
-        })
+        )
 
         return () => {
             unSubConvListUpdateEvents()

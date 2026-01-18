@@ -152,6 +152,10 @@ func (a *App) Disconnect() error {
 
 	user.Reset()
 
+	a.cm.ResetWhileDisconnected()
+
+	a.cm.EmitConvListUpdateEvent(make([]*chat.ConvItem, 0), -1)
+
 	return nil
 }
 

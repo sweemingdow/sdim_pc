@@ -1,8 +1,8 @@
 app-config:
   profile: dev
   stop-timeout: 1s
-  engine-server-addr: '192.168.1.155:5077'
-  api-gw-addr: 'http://192.168.1.155:6000'
+  engine-server-addr: '192.168.1.6:5077'
+  api-gw-addr: 'http://192.168.1.6:6000'
 
 log-config:
   level: trace

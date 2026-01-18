@@ -16,7 +16,7 @@ type UserApi struct {
 
 func NewUserApi(cfg config.Config, reqSender *unet.HttpSender) *UserApi {
 	return &UserApi{
-		host:      fmt.Sprintf("%s", "http://192.168.1.155:6050"),
+		host:      fmt.Sprintf("%s", "http://192.168.1.6:6050"),
 		reqSender: reqSender,
 	}
 }

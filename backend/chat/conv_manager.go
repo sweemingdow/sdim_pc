@@ -118,6 +118,15 @@ func (cm *ConvManager) AppendTailMsgs(convId string, msgs []*preinld.Msg) ([]*Co
 	return cm.items, idx, true
 }
 
+func (cm *ConvManager) ResetWhileDisconnected() {
+	cm.rw.Lock()
+	defer cm.rw.Unlock()
+
+	cm.items = make([]*ConvItem, 0)
+	cm.id2idx = make(map[string]int)
+	cm.msgId2msg = make(map[string]*preinld.Msg)
+}
+
 func (cm *ConvManager) InsertMsgWhileSend(msd preinld.MsgSendData) ([]*ConvItem, int, string, bool) {
 	ui := user.GetUserInfo()
 

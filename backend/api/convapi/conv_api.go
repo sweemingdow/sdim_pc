@@ -18,7 +18,7 @@ type ConvApi struct {
 
 func NewConvApi(cfg config.Config, reqSender *unet.HttpSender) *ConvApi {
 	return &ConvApi{
-		host:      fmt.Sprintf("%s", "http://192.168.1.155:6020"),
+		host:      fmt.Sprintf("%s", "http://192.168.1.6:6020"),
 		reqSender: reqSender,
 	}
 }
