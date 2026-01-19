@@ -20,7 +20,7 @@ type MsgApi struct {
 
 func NewMsgApi(cfg config.Config, reqSender *unet.HttpSender) *MsgApi {
 	return &MsgApi{
-		host:      fmt.Sprintf("%s", "http://192.168.1.6:6040"),
+		host:      fmt.Sprintf("%s", "http://192.168.1.155:6040"),
 		reqSender: reqSender,
 	}
 }

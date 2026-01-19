@@ -89,6 +89,7 @@ export namespace groupbinder {
 export namespace preinld {
 	
 	export class SenderInfo {
+	    senderType: number;
 	    nickname?: string;
 	    avatar?: string;
 	
@@ -98,6 +99,7 @@ export namespace preinld {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.senderType = source["senderType"];
 	        this.nickname = source["nickname"];
 	        this.avatar = source["avatar"];
 	    }

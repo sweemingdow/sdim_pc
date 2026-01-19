@@ -13,10 +13,35 @@ type MsgSendData struct {
 type MsgType uint16
 
 const (
-	TextType   MsgType = 1
-	ImgType    MsgType = 2
-	VideoType  MsgType = 3
-	RevokeType MsgType = 4
+	// chat
+	// text
+	TextType MsgType = 1
+
+	// image
+	ImageType MsgType = 2
+
+	// custom
+	CustomType MsgType = 100
+
+	// cmd
+	CmdType MsgType = 1000
+)
+
+type SubCmdType uint16
+
+const (
+	// 邀请入群
+	SubCmdGroupInvited SubCmdType = 1001
+)
+
+const SysSendUser = "sys:send:sys_auto"
+
+type SenderType uint8
+
+const (
+	UserSender SenderType = 1
+
+	SysCmdSender SenderType = 10
 )
 
 type (
@@ -28,8 +53,9 @@ type (
 	}
 
 	SenderInfo struct {
-		Nickname string `json:"nickname,omitempty"`
-		Avatar   string `json:"avatar,omitempty"`
+		SenderType SenderType `json:"senderType"`
+		Nickname   string     `json:"nickname,omitempty"`
+		Avatar     string     `json:"avatar,omitempty"`
 	}
 
 	Msg struct {

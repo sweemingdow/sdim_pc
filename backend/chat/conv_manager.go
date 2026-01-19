@@ -8,6 +8,8 @@ import (
 	"sdim_pc/backend/preinld"
 	"sdim_pc/backend/user"
 	"sdim_pc/backend/utils"
+	"sdim_pc/backend/utils/parser/json"
+	"strings"
 	"sync"
 	"time"
 )
@@ -59,11 +61,57 @@ func (cm *ConvManager) List() []*ConvItem {
 }
 
 func (cm *ConvManager) ReplaceConvList(convItems []*ConvItem) {
+	if len(convItems) == 0 {
+		return
+	}
+
 	cm.rw.Lock()
 	cm.items = convItems
 	for i, item := range convItems {
 		cm.id2idx[item.ConvId] = i
+		if len(item.RecentlyMsgs) > 0 {
+			item.LastMsg = item.RecentlyMsgs[0]
+		}
+
+		if item.LastMsg != nil {
+			myUid := user.GetUid()
+			if item.ConvType == preinld.GroupConv {
+				if item.LastMsg.Content != nil {
+					if item.LastMsg.Content.Type == preinld.CmdType {
+						content := item.LastMsg.Content.Content
+						subCmd := content["subCmd"].(float64)
+						if preinld.SubCmdGroupInvited == preinld.SubCmdType(subCmd) {
+							inviteContent, ok := content["inviteContent"].(map[string]any)
+							if ok {
+								inviteInfoMap, _ := inviteContent["inviteInfo"].(map[string]any)
+								inviteNickname, _ := inviteInfoMap["nickname"].(string)
+								inviteUid, _ := inviteInfoMap["uid"].(string)
+								//groupMebCount, _ := inviteContent["groupMebCount"].(float64)
+								inviteHint, _ := inviteContent["inviteHint"].(string)
+
+								isSelf := myUid == inviteUid
+
+								//if newConvItem.Title == "" {
+								//	newConvItem.Title = fmt.Sprintf("群聊(%d)", int(groupMebCount))
+								//}
+
+								var inviteTitle string
+								if isSelf {
+									inviteTitle = "你"
+								} else {
+									inviteTitle = inviteNickname
+								}
+								inviteHint = strings.ReplaceAll(inviteHint, "{0}", inviteTitle)
+								inviteContent["inviteHint"] = inviteHint
+							}
+						}
+					}
+				}
+			}
+
+		}
 	}
+
 	cm.rw.Unlock()
 
 	cm.emitConvListUpdateEvent()
@@ -263,7 +311,9 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 
 		return cm.items, idx, true
 	} else if cuf.Type == preinld.ConvAdded { // 会话新增
-		lg.Debug().Msgf("start handle conv add event, data=%+v", cuf)
+		dataPretty, _ := json.Fmt(cuf.Data)
+
+		lg.Debug().Msgf("start handle conv add event, data=%s", string(dataPretty))
 
 		myUid := user.GetUid()
 
@@ -276,8 +326,8 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 			return nil, -1, false
 		}
 
-		// 会话不存在, 前插
 		dataMap := cuf.Data
+		// 会话不存在, 前插
 		icon, _ := dataMap["icon"].(string)
 		title, _ := dataMap["title"].(string)
 		ts, _ := dataMap["ts"].(float64)
@@ -286,7 +336,7 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 		chatType, _ := dataMap["chatType"].(float64)
 		sender, _ := dataMap["sender"].(string)
 		receiver, _ := dataMap["receiver"].(string)
-		followMsgMap, ok := dataMap["followMsg"].(map[string]any)
+		followMsgMap, followMsgOk := dataMap["followMsg"].(map[string]any)
 
 		newConvItem := &ConvItem{
 			ConvId:     convId,
@@ -298,29 +348,35 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 			Uts:        int64(ts),
 		}
 
-		if ok {
+		if followMsgOk {
 			msgId, _ := followMsgMap["msgId"].(float64)
 			var senderInfo preinld.SenderInfo
 			if senderInfoMap, ok := followMsgMap["senderInfo"].(map[string]any); ok {
 				nickname, _ := senderInfoMap["nickname"].(string)
 				avatar, _ := senderInfoMap["avatar"].(string)
+				sendType, _ := senderInfoMap["senderType"].(float64)
 
 				senderInfo = preinld.SenderInfo{
-					Nickname: nickname,
-					Avatar:   avatar,
+					SenderType: preinld.SenderType(sendType),
+					Nickname:   nickname,
+					Avatar:     avatar,
 				}
 			}
 			var (
 				msgType    preinld.MsgType
 				msgContent *preinld.MsgContent
+				content    map[string]any
+				subCmd     preinld.SubCmdType
 			)
 
 			if contentMap, ok := followMsgMap["content"].(map[string]any); ok {
 				_msgType, _ := contentMap["type"].(float64)
 				msgType = preinld.MsgType(_msgType)
 				if ok {
-					var content, custom, extra map[string]any
+					var custom, extra map[string]any
 					content, _ = contentMap["content"].(map[string]any)
+					_subCmd, _ := content["subCmd"].(float64)
+					subCmd = preinld.SubCmdType(_subCmd)
 					custom, _ = contentMap["custom"].(map[string]any)
 					extra, _ = contentMap["extra"].(map[string]any)
 					msgContent = &preinld.MsgContent{
@@ -332,7 +388,7 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 				}
 			}
 
-			lastMsg := &preinld.Msg{
+			var lastMsg = &preinld.Msg{
 				MsgId:      int64(msgId),
 				ConvId:     convId,
 				Sender:     sender,
@@ -344,8 +400,40 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 				MegSeq:     0,
 				Cts:        int64(ts),
 				State:      uint8(SendOk),
-				IsSelf:     myUid == sender,
 			}
+
+			var isSelf bool
+			if msgType <= preinld.CustomType {
+				isSelf = myUid == sender
+			} else if msgType == preinld.CmdType {
+				if subCmd == preinld.SubCmdGroupInvited {
+					inviteContent, ok := content["inviteContent"].(map[string]any)
+					if ok {
+						inviteInfoMap, _ := inviteContent["inviteInfo"].(map[string]any)
+						inviteNickname, _ := inviteInfoMap["nickname"].(string)
+						inviteUid, _ := inviteInfoMap["uid"].(string)
+						groupMebCount, _ := inviteContent["groupMebCount"].(float64)
+						inviteHint, _ := inviteContent["inviteHint"].(string)
+
+						isSelf = myUid == inviteUid
+
+						if newConvItem.Title == "" {
+							newConvItem.Title = fmt.Sprintf("群聊(%d)", int(groupMebCount))
+						}
+
+						var inviteTitle string
+						if isSelf {
+							inviteTitle = "你"
+						} else {
+							inviteTitle = inviteNickname
+						}
+						inviteHint = strings.ReplaceAll(inviteHint, "{0}", inviteTitle)
+						inviteContent["inviteHint"] = inviteHint
+					}
+				}
+			}
+
+			lastMsg.IsSelf = isSelf
 
 			newConvItem.LastMsg = lastMsg
 			newConvItem.RecentlyMsgs = append([]*preinld.Msg{lastMsg}, newConvItem.RecentlyMsgs...)

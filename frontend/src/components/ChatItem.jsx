@@ -1,4 +1,5 @@
 import P2pTextMsgItem from "./P2pTextMsgItem.jsx";
+import CmdHintMsgItem from "./CmdHintMsgItem.jsx";
 
 const ChatItem = ({chat}) => {
     const {msg, pw, ph} = chat;
@@ -7,6 +8,10 @@ const ChatItem = ({chat}) => {
             msg={msg}
             pw={pw}
             ph={ph}/>)
+    }else if (msg.msgType === 1000) {
+        return (
+            <CmdHintMsgItem msg={msg}/>
+        )
     }
 }
 

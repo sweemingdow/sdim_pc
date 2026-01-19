@@ -35,7 +35,25 @@ const ConvItem = ({convItem, onClick}) => {
                 }
 
             }
+        } else if (convItem.convType === 2) {
+            console.log(`convItem:\n${JSON.stringify(convItem)}`);
+
+            const msg = convItem.lastMsg
+            if (msg) {
+                if (msg.content) {
+                    // 文字消息
+                    if (msg.content.type === 1000) { // 命令消息
+                        if (msg.content.content.subCmd === 1001) {// 邀请进群提示
+                            if (msg.content.content.inviteContent) {
+                                return msg.content.content.inviteContent.inviteHint
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
         }
+
 
         return ""
     }
@@ -68,10 +86,8 @@ const ConvItem = ({convItem, onClick}) => {
                     justifyContent: 'center',
                     alignItems: "center",
                     fontSize: 10
-                },
-                width
-            },
-            text,
+                }, width
+            }, text,
         }
     }
 
@@ -80,9 +96,7 @@ const ConvItem = ({convItem, onClick}) => {
     return (<div className={`conv-item ${convItem.selected ? 'selected' : 'unselected'}`}
                  onClick={onClick}
                  style={{
-                     width: '100%', height: 64, boxSizing: "border-box",
-                     paddingLeft: 12,
-                     paddingRight: 12,
+                     width: '100%', height: 64, boxSizing: "border-box", paddingLeft: 12, paddingRight: 12,
                  }}>
 
         <div id="ci-row" style={{
@@ -113,10 +127,8 @@ const ConvItem = ({convItem, onClick}) => {
 
             <div id="ci-row-r" style={{
                 flex: 1,
-                boxSizing: "border-box",
-                // backgroundColor:"red",
-                width: '100%',
-                // height: '100%',
+                boxSizing: "border-box", // backgroundColor:"red",
+                width: '100%', // height: '100%',
                 height: 40,
                 marginTop: 12,
                 display: "flex",
@@ -174,7 +186,10 @@ const ConvItem = ({convItem, onClick}) => {
                     <img src={noDisturbIcon}
                          style={{
                              display: convItem.noDisturb ? 'inline-block' : 'none',
-                             width: 14, height: 14, flexShrink: 0, marginLeft: 8
+                             width: 14,
+                             height: 14,
+                             flexShrink: 0,
+                             marginLeft: 8
                          }}/>
 
                     {/*<div style={{*/}

@@ -88,11 +88,11 @@ function App() {
                 const items = data.items
                 const idx = data.idx
 
-                debugger
                 if (!items) {
                     if (idx === -1) {
                         setUserProfile({avatar: ""})
                     }
+                    setConvItems([])
                     return;
                 }
 
