@@ -43,7 +43,7 @@ const ChatInput = ({send, inputEnabled, onClick}) => {
 
     const onSendMsg = (_) => {
         const msd = {
-            chatType: 1,
+            // chatType: 1,
             ttl: 0,
             msgContent: {
                 type: 1,

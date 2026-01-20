@@ -219,6 +219,7 @@ func (c *Client) SendMsgFrame(msd preinld.MsgSendData) error {
 		sender, msd.Receiver, msd.ChatType, *msd.MsgContent)
 
 	sf := preinld.SendFrame{
+		ConvId:         msd.ConvId,
 		Sender:         sender,
 		Receiver:       msd.Receiver,
 		ChatType:       msd.ChatType,

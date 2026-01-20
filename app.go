@@ -17,7 +17,6 @@ import (
 	"sdim_pc/backend/mylog"
 	preinld "sdim_pc/backend/preinld"
 	"sdim_pc/backend/user"
-	"sdim_pc/backend/utils"
 	"sdim_pc/backend/utils/unet"
 	"time"
 )
@@ -166,15 +165,14 @@ func (a *App) SendMsg(msd *preinld.MsgSendData) error {
 		}
 	}
 
-	if msd.ConvId == "" {
-		clientId := utils.RandStr(32)
-		_msd := *msd
-		_msd.ClientId = clientId
-		return a.cli.SendMsgFrame(_msd)
-	}
+	//if msd.ClientId == "" {
+	//	clientId := utils.RandStr(32)
+	//	_msd := *msd
+	//	_msd.ClientId = clientId
+	//}
 
 	convItems, idx, clientMsgId, ok := a.cm.InsertMsgWhileSend(*msd)
-	if !ok {
+	if !ok && msd.ConvId != "" && msd.ChatType == preinld.P2pChat {
 		return errors.New("can not found conv with id:" + msd.ConvId)
 	}
 

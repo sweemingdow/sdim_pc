@@ -85,40 +85,39 @@ function App() {
 
     useEffect(() => {
         const unSubConvListUpdateEvents = EventsOn("event_backend:conv_list_update", data => {
-                const items = data.items
-                const idx = data.idx
+            const items = data.items
+            const idx = data.idx
 
-                if (!items) {
-                    if (idx === -1) {
-                        setUserProfile({avatar: ""})
-                    }
-                    setConvItems([])
-                    return;
+            if (!items) {
+                if (idx === -1) {
+                    setUserProfile({avatar: ""})
                 }
-
-                // messageApi.info(`receive conv list update event, size=${items.length}, idx=${idx}`)
-
-                const curSelItem = selectedConvItemRef.current;
-                const inRoom = curSelItem.idx !== -1 && curSelItem.convItem && curSelItem.convItem.convId === data.items[idx]?.convId
-
-                console.log(`receive conv list update event, size=${items.length}, idx=${idx}, curSelItem.idx=${curSelItem.idx}, inRoom=${inRoom}`)
-
-                setConvItems(items)
-
-                const convItem = data.items[idx]
-
-                if (inRoom) {
-                    convItem.selected = true
-                    const newSelItem = {idx: idx, convItem: convItem}
-                    setSelectedConvItem(newSelItem);
-                    selectedConvItemRef.current = newSelItem
-
-                    setMaskShow(false)
-
-                    setCurrMsgs(data.items[idx].recentlyMsgs);
-                }
+                setConvItems([])
+                return;
             }
-        )
+
+            // messageApi.info(`receive conv list update event, size=${items.length}, idx=${idx}`)
+
+            const curSelItem = selectedConvItemRef.current;
+            const inRoom = curSelItem.idx !== -1 && curSelItem.convItem && curSelItem.convItem.convId === data.items[idx]?.convId
+
+            console.log(`receive conv list update event, size=${items.length}, idx=${idx}, curSelItem.idx=${curSelItem.idx}, inRoom=${inRoom}`)
+
+            setConvItems(items)
+
+            const convItem = data.items[idx]
+
+            if (inRoom) {
+                convItem.selected = true
+                const newSelItem = {idx: idx, convItem: convItem}
+                setSelectedConvItem(newSelItem);
+                selectedConvItemRef.current = newSelItem
+
+                setMaskShow(false)
+
+                setCurrMsgs(data.items[idx].recentlyMsgs);
+            }
+        })
 
         return () => {
             unSubConvListUpdateEvents()
@@ -194,6 +193,7 @@ function App() {
                 const convItem = convItems[selectedConvItem.idx];
                 msd.receiver = convItem.relationId;
                 msd.convId = convItem.convId;
+                msd.chatType = convItem.convType
             }
         }
 

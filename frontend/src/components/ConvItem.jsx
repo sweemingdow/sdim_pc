@@ -36,19 +36,25 @@ const ConvItem = ({convItem, onClick}) => {
 
             }
         } else if (convItem.convType === 2) {
+            debugger
             console.log(`convItem:\n${JSON.stringify(convItem)}`);
 
             const msg = convItem.lastMsg
             if (msg) {
                 if (msg.content) {
                     // 文字消息
-                    if (msg.content.type === 1000) { // 命令消息
-                        if (msg.content.content.subCmd === 1001) {// 邀请进群提示
-                            if (msg.content.content.inviteContent) {
-                                return msg.content.content.inviteContent.inviteHint
+                    if (msg.content.type < 1000) {
+                        return msg.content.content.text
+                    } else {
+                        if (msg.content.type === 1000) { // 命令消息
+                            if (msg.content.content.subCmd === 1001) {// 邀请进群提示
+                                if (msg.content.content.inviteContent) {
+                                    return msg.content.content.inviteContent.inviteHint
+                                }
                             }
                         }
                     }
+
                 }
             }
         } else {
