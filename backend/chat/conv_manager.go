@@ -271,7 +271,44 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 
 		idx, ok := cm.id2idx[convId]
 		if !ok {
-			return nil, -1, false
+			// 会话新创建时, conv_update帧先到, conv_add帧后到
+			newConvItem := &ConvItem{
+				ConvId: convId,
+			}
+
+			convTypeVal, ok := cuf.Data["convType"].(float64)
+			if ok {
+				newConvItem.ConvType = preinld.ConvType(convTypeVal)
+			}
+
+			lastActiveTsVal, ok := cuf.Data["lastActiveTs"].(float64)
+			if ok {
+				newConvItem.Cts = int64(lastActiveTsVal)
+				newConvItem.Uts = int64(lastActiveTsVal)
+			}
+
+			lastMsgMap, ok := cuf.Data["lastMsg"].(map[string]any)
+			if ok {
+				var lastMsg preinld.Msg
+				data, err := json.Fmt(&lastMsgMap)
+				if err == nil {
+					err = json.Parse(data, &lastMsg)
+					if err == nil {
+						RewriteContentIfNeed(&lastMsg, user.GetUid())
+						lastMsg.ConvId = convId
+						newConvItem.LastMsg = &lastMsg
+
+					}
+				}
+			}
+
+			cm.id2idx = make(map[string]int)
+			cm.items = append([]*ConvItem{newConvItem}, cm.items...)
+			for i, item := range cm.items {
+				cm.id2idx[item.ConvId] = i
+			}
+
+			return cm.items, -1, true
 		}
 
 		convItem := cm.items[idx]
@@ -304,8 +341,22 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 		if convLastMsg != nil {
 			// 更新
 			if msgIdInMap == convLastMsg.MsgId {
+				RewriteContentIfNeed(convLastMsg, user.GetUid())
 				convItem.UnreadCount = int64(unreadCountVal)
 				convItem.Uts = int64(lastActiveTsVal)
+			}
+		} else {
+			var lastMsg preinld.Msg
+			data, err := json.Fmt(&lastMsgMap)
+			if err == nil {
+				err = json.Parse(data, &lastMsg)
+				if err == nil {
+					RewriteContentIfNeed(&lastMsg, user.GetUid())
+
+					lastMsg.ConvId = convId
+					convItem.LastMsg = &lastMsg
+					convItem.RecentlyMsgs = append([]*preinld.Msg{&lastMsg}, convItem.RecentlyMsgs...)
+				}
 			}
 		}
 
@@ -333,10 +384,10 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 		ts, _ := dataMap["ts"].(float64)
 		relationId, _ := dataMap["relationId"].(string)
 		convType, _ := dataMap["convType"].(float64)
-		chatType, _ := dataMap["chatType"].(float64)
+		//chatType, _ := dataMap["chatType"].(float64)
 		sender, _ := dataMap["sender"].(string)
-		receiver, _ := dataMap["receiver"].(string)
-		followMsgMap, followMsgOk := dataMap["followMsg"].(map[string]any)
+		//receiver, _ := dataMap["receiver"].(string)
+		//followMsgMap, followMsgOk := dataMap["followMsg"].(map[string]any)
 
 		newConvItem := &ConvItem{
 			ConvId:     convId,
@@ -348,59 +399,59 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 			Uts:        int64(ts),
 		}
 
-		if followMsgOk {
-			msgId, _ := followMsgMap["msgId"].(float64)
-			var senderInfo preinld.SenderInfo
-			if senderInfoMap, ok := followMsgMap["senderInfo"].(map[string]any); ok {
-				nickname, _ := senderInfoMap["nickname"].(string)
-				avatar, _ := senderInfoMap["avatar"].(string)
-				sendType, _ := senderInfoMap["senderType"].(float64)
-
-				senderInfo = preinld.SenderInfo{
-					SenderType: preinld.SenderType(sendType),
-					Nickname:   nickname,
-					Avatar:     avatar,
-				}
-			}
+		if true {
+			//msgId, _ := followMsgMap["msgId"].(float64)
+			//var senderInfo preinld.SenderInfo
+			//if senderInfoMap, ok := followMsgMap["senderInfo"].(map[string]any); ok {
+			//	nickname, _ := senderInfoMap["nickname"].(string)
+			//	avatar, _ := senderInfoMap["avatar"].(string)
+			//	sendType, _ := senderInfoMap["senderType"].(float64)
+			//
+			//	senderInfo = preinld.SenderInfo{
+			//		SenderType: preinld.SenderType(sendType),
+			//		Nickname:   nickname,
+			//		Avatar:     avatar,
+			//	}
+			//}
 			var (
-				msgType    preinld.MsgType
-				msgContent *preinld.MsgContent
-				content    map[string]any
-				subCmd     preinld.SubCmdType
+				msgType preinld.MsgType
+				//msgContent *preinld.MsgContent
+				content map[string]any
+				subCmd  preinld.SubCmdType
 			)
 
-			if contentMap, ok := followMsgMap["content"].(map[string]any); ok {
-				_msgType, _ := contentMap["type"].(float64)
-				msgType = preinld.MsgType(_msgType)
-				if ok {
-					var custom, extra map[string]any
-					content, _ = contentMap["content"].(map[string]any)
-					_subCmd, _ := content["subCmd"].(float64)
-					subCmd = preinld.SubCmdType(_subCmd)
-					custom, _ = contentMap["custom"].(map[string]any)
-					extra, _ = contentMap["extra"].(map[string]any)
-					msgContent = &preinld.MsgContent{
-						Type:    msgType,
-						Content: content,
-						Custom:  custom,
-						Extra:   extra,
-					}
-				}
-			}
+			//if contentMap, ok := followMsgMap["content"].(map[string]any); ok {
+			//	_msgType, _ := contentMap["type"].(float64)
+			//	msgType = preinld.MsgType(_msgType)
+			//	if ok {
+			//		var custom, extra map[string]any
+			//		content, _ = contentMap["content"].(map[string]any)
+			//		_subCmd, _ := content["subCmd"].(float64)
+			//		subCmd = preinld.SubCmdType(_subCmd)
+			//		custom, _ = contentMap["custom"].(map[string]any)
+			//		extra, _ = contentMap["extra"].(map[string]any)
+			//		msgContent = &preinld.MsgContent{
+			//			Type:    msgType,
+			//			Content: content,
+			//			Custom:  custom,
+			//			Extra:   extra,
+			//		}
+			//	}
+			//}
 
-			var lastMsg = &preinld.Msg{
-				MsgId:      int64(msgId),
-				ConvId:     convId,
-				Sender:     sender,
-				Receiver:   receiver,
-				ChatType:   preinld.ChatType(chatType),
-				MsgType:    msgType,
-				Content:    msgContent,
-				SenderInfo: senderInfo,
-				MegSeq:     0,
-				Cts:        int64(ts),
-				State:      uint8(SendOk),
-			}
+			//var lastMsg = &preinld.Msg{
+			//	MsgId:      int64(msgId),
+			//	ConvId:     convId,
+			//	Sender:     sender,
+			//	Receiver:   receiver,
+			//	ChatType:   preinld.ChatType(chatType),
+			//	MsgType:    msgType,
+			//	Content:    msgContent,
+			//	SenderInfo: senderInfo,
+			//	MegSeq:     0,
+			//	Cts:        int64(ts),
+			//	State:      uint8(SendOk),
+			//}
 
 			var isSelf bool
 			if msgType <= preinld.CustomType {
@@ -433,10 +484,10 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 				}
 			}
 
-			lastMsg.IsSelf = isSelf
+			//lastMsg.IsSelf = isSelf
 
-			newConvItem.LastMsg = lastMsg
-			newConvItem.RecentlyMsgs = append([]*preinld.Msg{lastMsg}, newConvItem.RecentlyMsgs...)
+			//newConvItem.LastMsg = lastMsg
+			//newConvItem.RecentlyMsgs = append([]*preinld.Msg{lastMsg}, newConvItem.RecentlyMsgs...)
 		}
 
 		cm.id2idx = make(map[string]int)

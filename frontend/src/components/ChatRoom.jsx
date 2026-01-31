@@ -223,7 +223,7 @@ const ChatRoom = forwardRef(({height, msgs, hasMore, fetchNextMsgs}, ref) => {
                     <Spin size="small"/>
                 </div>
             }
-            dataLength={msgs.length}
+            dataLength={msgs && msgs.length}
             style={{
                 display: 'flex', flexDirection: 'column-reverse', // 配合 inverse 使用
                 minHeight: '100%',

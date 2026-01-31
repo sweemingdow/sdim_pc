@@ -16,6 +16,7 @@ import {FetchNextMsgs} from "../wailsjs/go/msgbinder/MsgBinder.js";
 import {EventsOn} from "../wailsjs/runtime/runtime.js";
 import {ClearUnreadCount} from "../wailsjs/go/convbinder/ConvBinder.js";
 import {StarGroupChat} from "../wailsjs/go/groupbinder/GroupBinder.js";
+import SideCurtain from "./components/SideCurtain.jsx";
 
 function App() {
     const [messageApi, contextHolder] = message.useMessage();
@@ -47,6 +48,8 @@ function App() {
     const [currMsgs, setCurrMsgs] = useState([])
 
     const [userProfile, setUserProfile] = useState({})
+
+    const [sideCurtainShow, setSideCurtainShow] = useState(false)
 
     useEffect(() => {
         if (!chatRoomRootRef.current) return;
@@ -170,6 +173,7 @@ function App() {
     // 主动断开连接
     const disConnWithActive = () => {
         setConnState(1)
+        setMaskShow(true)
 
         Disconnect().then(_ => {
             messageApi.warning(`disconnect success`)
@@ -257,7 +261,7 @@ function App() {
             setMaskShow(!curSelected)
 
             if (curSelected) {
-                messageApi.info(`on conv item selected, idx:${idx}, convId:${convItem.convId}, relationId=${convItem.relationId}, hasMore=${convItem.hasMore}`)
+                // messageApi.info(`on conv item selected, idx:${idx}, convId:${convItem.convId}, relationId=${convItem.relationId}, hasMore=${convItem.hasMore}`)
 
                 if (idx < convItems.length) {
                     // messageApi.info(`msgs=${convItems[idx].recentlyMsgs.length} in convId=${convItem.convId}`)
@@ -285,12 +289,12 @@ function App() {
 
             setMaskShow(false)
 
-            messageApi.info(`on conv item newSelected, idx:${idx}, convId:${convItem.convId}, relationId=${convItem.relationId}, hasMore=${convItem.hasMore}`)
+            // messageApi.info(`on conv item newSelected, idx:${idx}, convId:${convItem.convId}, relationId=${convItem.relationId}, hasMore=${convItem.hasMore}`)
 
             const copyConvItem = {...convItem}
             copyConvItem.recentlyMsgs = []
 
-            console.log(`selected convItem:\n${JSON.stringify(copyConvItem)}`)
+            // console.log(`selected convItem:\n${JSON.stringify(copyConvItem)}`)
 
             if (idx < convItems.length) {
                 // messageApi.info(`msgs=${convItems[idx].recentlyMsgs.length} in convId=${convItem.convId}`)
@@ -303,6 +307,8 @@ function App() {
             // 触发会话清除
             doClearUnread(convItem.convId)
         }
+
+        setSideCurtainShow(false)
     }
 
     const doClearUnread = (convId) => {
@@ -321,6 +327,15 @@ function App() {
     const getCurSelectedConvId = () => {
         const curSelItem = selectedConvItemRef.current;
         return curSelItem && curSelItem.idx !== -1 && curSelItem.convItem.convId
+    }
+
+
+    const onTitlePointClick = () => {
+        const curSelItem = selectedConvItemRef.current;
+        if (curSelItem) {
+            // alert(`convType=${curSelItem.convItem.convType}, convId=${curSelItem.convItem.convId}`)
+            setSideCurtainShow(!sideCurtainShow)
+        }
     }
 
     return (<>
@@ -382,6 +397,23 @@ function App() {
                     }}>
 
                         <div style={{
+                            boxSizing:"border-box",
+                            position: "absolute",
+                            width: 248,
+                            height: '100%',
+                            backgroundColor: "white",
+                            right: 0,
+                            zIndex: 99,
+                            display: 'flex',
+                            transform: sideCurtainShow ? 'translateX(0)' : 'translateX(100%)',
+                            opacity: sideCurtainShow ? 1 : 0,
+                            transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
+                            pointerEvents: sideCurtainShow ? 'auto' : 'none',
+                        }}>
+                            <SideCurtain convItem={selectedConvItemRef.current?.convItem}/>
+                        </div>
+
+                        <div style={{
                             position: "absolute",
                             width: '100%',
                             height: '100%',
@@ -398,10 +430,12 @@ function App() {
                             />
                         </div>
 
-                        <TitleSetting setting={{
-                            connState,
-                            title: selectedConvItem && selectedConvItem.convItem ? selectedConvItem.convItem.title : ""
-                        }}/>
+                        <TitleSetting
+                            pointClick={onTitlePointClick}
+                            setting={{
+                                connState,
+                                title: selectedConvItem && selectedConvItem.convItem ? selectedConvItem.convItem.title : ""
+                            }}/>
 
                         <div style={{
                             height: 1, width: "100%", backgroundColor: '#ddd'
@@ -409,6 +443,7 @@ function App() {
 
                         <div
                             ref={chatRoomRootRef}
+                            onClick={() => setSideCurtainShow(false)}
                             style={{
                                 flex: 1, backgroundColor: "#EDEDED", overflow: "hidden", // 重要：防止内部滚动干扰
                             }}

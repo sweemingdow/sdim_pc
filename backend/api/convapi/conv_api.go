@@ -84,6 +84,7 @@ func (ca *ConvApi) SyncHotConvList(uid string) ([]*chat.ConvItem, error) {
 				for _, msg := range convItem.RecentlyMsgs {
 					msg.IsSelf = myUid == msg.Sender
 					msg.State = uint8(chat.SendOk)
+					chat.RewriteContentIfNeed(msg, myUid)
 				}
 			}
 		}

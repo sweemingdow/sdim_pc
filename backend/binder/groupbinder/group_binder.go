@@ -47,3 +47,17 @@ func (b *GroupBinder) StarGroupChat(data StartGroupChatData) error {
 
 	return err
 }
+
+func (b *GroupBinder) FetchGroupData(groupNo string) (*groupapi.GroupDataResp, error) {
+	uid := user.GetUid()
+	mylog.GetLogger().Debug().Msgf("start fetch group data, groupNo=%s, uid=%s", groupNo, uid)
+
+	return b.gi.FetchGroupData(groupNo, user.GetUid())
+}
+
+func (b *GroupBinder) SettingGroupName(groupNo, groupName string) error {
+	uid := user.GetUid()
+	mylog.GetLogger().Debug().Msgf("start fetch group data, groupNo=%s, uid=%s", groupNo, uid)
+
+	return b.gi.SettingGroupName(groupNo, groupName)
+}

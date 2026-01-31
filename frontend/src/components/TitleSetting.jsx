@@ -1,6 +1,6 @@
 import settingIcon from '../assets/images/setting.png'
 
-const TitleSetting = ({setting}) => {
+const TitleSetting = ({setting, pointClick}) => {
     const {connState, title} = setting
 
     const getTitle = () => {
@@ -50,8 +50,9 @@ const TitleSetting = ({setting}) => {
             borderRadius: 3,
             display: "flex",
             alignItems: "center",
-            justifyContent: "center"
-        }}>
+            justifyContent: "center",
+        }}
+             onClick={pointClick}>
             <img src={settingIcon} style={{
                 width: 18,
                 height: 18,

@@ -63,6 +63,73 @@ export namespace chat {
 
 }
 
+export namespace groupapi {
+	
+	export class MebInfoItem {
+	    id?: number;
+	    uid?: string;
+	    nickname?: string;
+	    avatar?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MebInfoItem(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.uid = source["uid"];
+	        this.nickname = source["nickname"];
+	        this.avatar = source["avatar"];
+	    }
+	}
+	export class GroupDataResp {
+	    groupNo?: string;
+	    groupName?: string;
+	    groupLimitedNum?: number;
+	    groupMebCount?: number;
+	    groupAnnouncement?: string;
+	    membersInfo: MebInfoItem[];
+	    groupBak?: string;
+	    nicknameInGroup?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GroupDataResp(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.groupNo = source["groupNo"];
+	        this.groupName = source["groupName"];
+	        this.groupLimitedNum = source["groupLimitedNum"];
+	        this.groupMebCount = source["groupMebCount"];
+	        this.groupAnnouncement = source["groupAnnouncement"];
+	        this.membersInfo = this.convertValues(source["membersInfo"], MebInfoItem);
+	        this.groupBak = source["groupBak"];
+	        this.nicknameInGroup = source["nicknameInGroup"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace groupbinder {
 	
 	export class StartGroupChatData {

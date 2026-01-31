@@ -36,9 +36,7 @@ const ConvItem = ({convItem, onClick}) => {
 
             }
         } else if (convItem.convType === 2) {
-            debugger
-            console.log(`convItem:\n${JSON.stringify(convItem)}`);
-
+            // console.log(`convItem:\n${JSON.stringify(convItem)}`);
             const msg = convItem.lastMsg
             if (msg) {
                 if (msg.content) {
