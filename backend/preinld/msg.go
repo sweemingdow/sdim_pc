@@ -32,6 +32,15 @@ type SubCmdType uint16
 const (
 	// 邀请入群
 	SubCmdGroupInvited SubCmdType = 1001
+
+	// 设置群名称
+	SubCmdGroupSettingName SubCmdType = 1002
+
+	// 添加到群聊
+	SubCmdGroupAddMembers SubCmdType = 1003
+
+	// 移出群聊
+	SubCmdGroupRemoveMembers SubCmdType = 1004
 )
 
 const SysSendUser = "sys:send:sys_auto"

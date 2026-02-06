@@ -5,6 +5,14 @@ import {groupbinder} from '../models';
 
 export function FetchGroupData(arg1:string):Promise<groupapi.GroupDataResp>;
 
+export function GroupAddMembers(arg1:string,arg2:Array<string>):Promise<void>;
+
+export function GroupRemMembers(arg1:string,arg2:Array<string>):Promise<void>;
+
+export function SettingGroupBak(arg1:string,arg2:string):Promise<void>;
+
 export function SettingGroupName(arg1:string,arg2:string):Promise<void>;
+
+export function SettingNicknameInGroup(arg1:string,arg2:string):Promise<void>;
 
 export function StarGroupChat(arg1:groupbinder.StartGroupChatData):Promise<void>;

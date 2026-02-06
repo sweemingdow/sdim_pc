@@ -3,7 +3,9 @@ package frmhandler
 import (
 	"context"
 	"github.com/panjf2000/ants/v2"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"sdim_pc/backend/api/convapi"
+	"sdim_pc/backend/appctx"
 	"sdim_pc/backend/chat"
 	"sdim_pc/backend/client/frm"
 	"sdim_pc/backend/mylog"
@@ -16,6 +18,7 @@ type FrameHandler struct {
 	frmCh  <-chan *frm.Frame
 	stopCh chan struct{}
 	cm     *chat.ConvManager
+	gm     *chat.GroupManager
 	pool   *ants.Pool
 	closed atomic.Bool
 	ca     *convapi.ConvApi
@@ -24,6 +27,7 @@ type FrameHandler struct {
 func NewFrameHandler(
 	frmCh <-chan *frm.Frame,
 	cm *chat.ConvManager,
+	gm *chat.GroupManager,
 	ca *convapi.ConvApi,
 ) *FrameHandler {
 	pool, _ := ants.NewPool(
@@ -37,6 +41,7 @@ func NewFrameHandler(
 		frmCh:  frmCh,
 		stopCh: make(chan struct{}),
 		cm:     cm,
+		gm:     gm,
 		ca:     ca,
 		pool:   pool,
 	}
@@ -136,6 +141,34 @@ func (fh *FrameHandler) handleFrame(frame *frm.Frame) {
 		items, idx, ok := fh.cm.UpdateWhenConvUpdate(&cuf)
 		if ok {
 			fh.cm.EmitConvListUpdateEvent(items, idx)
+		}
+	} else if ft == frm.Notify {
+		var frmPd preinld.NotifyFrame
+
+		err := json.Parse(frame.Payload.Body, &frmPd)
+		if err != nil {
+			lg.Error().Stack().Err(err).Msg("parse notify frame body failed")
+			return
+		}
+
+		notifyType := frmPd.NotifyType
+		subType := frmPd.SubType
+
+		if notifyType == preinld.GroupNotifyType {
+			if subType == preinld.SettingNicknameInGroup {
+				var uid, groupNo, nickname string
+				uid, _ = frmPd.Data["modifier"].(string)
+				groupNo, _ = frmPd.Data["groupNo"].(string)
+				nickname, _ = frmPd.Data["newNickname"].(string)
+
+				fh.gm.ModifyGroupNickname(uid, groupNo, nickname)
+
+				runtime.EventsEmit(appctx.GetAppCtx(), "event_backend:modify_group_nickname", groupNo)
+			} else if subType == preinld.GroupAddMembers {
+				println("GroupAddMembers")
+			} else if subType == preinld.GroupRemoveMembers {
+				println("GroupRemoveMembers")
+			}
 		}
 	}
 }

@@ -50,8 +50,7 @@ func TestCopy(t *testing.T) {
 			Title:      "niha",
 			Icon:       "123.jpg",
 			LastMsg: &preinld.Msg{
-				MsgId:          123,
-				ClientUniqueId: "321",
+				MsgId: 123,
 				SenderInfo: preinld.SenderInfo{
 					Nickname: "dagehao",
 					Avatar:   "dagehao.jpg",
@@ -63,7 +62,6 @@ func TestCopy(t *testing.T) {
 					},
 				},
 				Cts:   1,
-				Uts:   1,
 				State: 1,
 			},
 			UnreadCount:  21,
@@ -80,8 +78,7 @@ func TestCopy(t *testing.T) {
 			Title:      "niha2",
 			Icon:       "123.jpg2",
 			LastMsg: &preinld.Msg{
-				MsgId:          123,
-				ClientUniqueId: "3212",
+				MsgId: 123,
 				SenderInfo: preinld.SenderInfo{
 					Nickname: "dagehao2",
 					Avatar:   "dagehao.jpg2",
@@ -93,7 +90,6 @@ func TestCopy(t *testing.T) {
 					},
 				},
 				Cts:   2,
-				Uts:   2,
 				State: 2,
 			},
 			UnreadCount:  212,

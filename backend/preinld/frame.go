@@ -113,11 +113,36 @@ const (
 	ConvAdded = "ConvAdded" // 会话新增
 )
 
+const (
+	UserActiveSettingGroupBak = "UserActiveSettingGroupBak" // 用户主动设置群备注
+	SomeOneModifyGroupName    = "SomeOneModifyGroupName"    // 有人修改了群名称
+)
+
+const (
+	GroupNotifyType = "GroupEventNotify"
+
+	SettingNicknameInGroup = "SettingNicknameInGroup"
+
+	GroupAddMembers = "GroupAddMembers"
+
+	// 移出群聊
+	GroupRemoveMembers = "GroupRemoveMembers"
+)
+
 type (
 	ConvUpdateFrame struct {
 		ConvId string         `json:"convId"`
 		Type   string         `json:"type"` // 会话更新类型
 		Data   map[string]any `json:"data"` // 携带的数据
+	}
+)
+
+type (
+	// 通知指令帧(server to client)
+	NotifyFrame struct {
+		NotifyType string         `json:"notifyType,omitempty"` // 通知类型
+		SubType    string         `json:"subType,omitempty"`    // 子类型
+		Data       map[string]any `json:"data,omitempty"`       // 携带的数据
 	}
 )
 

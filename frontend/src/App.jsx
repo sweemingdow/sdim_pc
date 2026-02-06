@@ -201,11 +201,11 @@ function App() {
             }
         }
 
-        messageApi.info(`msd=${JSON.stringify(msd)}`);
+        // messageApi.info(`msd=${JSON.stringify(msd)}`);
 
         try {
             await SendMsg(msd)
-            messageApi.success(`msg send success, msd=${JSON.stringify(msd)}`)
+            // messageApi.success(`msg send success, msd=${JSON.stringify(msd)}`)
 
         } catch (e) {
             messageApi.error(`msg send failed, msg=${msd}, e=${e}`)
@@ -410,7 +410,7 @@ function App() {
                             transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
                             pointerEvents: sideCurtainShow ? 'auto' : 'none',
                         }}>
-                            <SideCurtain convItem={selectedConvItemRef.current?.convItem}/>
+                            <SideCurtain convItem={selectedConvItemRef.current?.convItem} messageApi={messageApi}/>
                         </div>
 
                         <div style={{

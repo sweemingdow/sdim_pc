@@ -70,6 +70,7 @@ export namespace groupapi {
 	    uid?: string;
 	    nickname?: string;
 	    avatar?: string;
+	    role?: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new MebInfoItem(source);
@@ -81,11 +82,13 @@ export namespace groupapi {
 	        this.uid = source["uid"];
 	        this.nickname = source["nickname"];
 	        this.avatar = source["avatar"];
+	        this.role = source["role"];
 	    }
 	}
 	export class GroupDataResp {
 	    groupNo?: string;
 	    groupName?: string;
+	    role?: number;
 	    groupLimitedNum?: number;
 	    groupMebCount?: number;
 	    groupAnnouncement?: string;
@@ -101,6 +104,7 @@ export namespace groupapi {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.groupNo = source["groupNo"];
 	        this.groupName = source["groupName"];
+	        this.role = source["role"];
 	        this.groupLimitedNum = source["groupLimitedNum"];
 	        this.groupMebCount = source["groupMebCount"];
 	        this.groupAnnouncement = source["groupAnnouncement"];

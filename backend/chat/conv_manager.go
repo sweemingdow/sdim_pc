@@ -20,13 +20,15 @@ type ConvManager struct {
 	id2idx    map[string]int          // 会话id => idx
 	msgId2msg map[string]*preinld.Msg // 维护消息发送: 消息id => 消息
 	rw        sync.RWMutex
+	gm        *GroupManager
 }
 
-func NewConvManager() *ConvManager {
+func NewConvManager(gm *GroupManager) *ConvManager {
 	cm := &ConvManager{
 		items:     make([]*ConvItem, 0, 100),
 		id2idx:    make(map[string]int, 100),
 		msgId2msg: make(map[string]*preinld.Msg, 200),
+		gm:        gm,
 	}
 
 	return cm
@@ -75,7 +77,8 @@ func (cm *ConvManager) ReplaceConvList(convItems []*ConvItem) {
 
 		if item.LastMsg != nil {
 			myUid := user.GetUid()
-			if item.ConvType == preinld.GroupConv {
+			RewriteContentIfNeed(item.LastMsg, myUid)
+			/*if item.ConvType == preinld.GroupConv {
 				if item.LastMsg.Content != nil {
 					if item.LastMsg.Content.Type == preinld.CmdType {
 						content := item.LastMsg.Content.Content
@@ -107,7 +110,7 @@ func (cm *ConvManager) ReplaceConvList(convItems []*ConvItem) {
 						}
 					}
 				}
-			}
+			}*/
 
 		}
 	}
@@ -251,6 +254,8 @@ func (cm *ConvManager) InsertMsgAfterReceived(ffb *preinld.ForwardFrameBody) ([]
 		IsSelf:     ui.Uid == ffb.Sender,
 		ClientId:   clientId,
 	}
+
+	RewriteContentIfNeed(lastMsg, ui.Uid)
 
 	convItem.LastMsg = lastMsg
 	convItem.RecentlyMsgs = append([]*preinld.Msg{lastMsg}, convItem.RecentlyMsgs...)
@@ -497,6 +502,43 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 		}
 
 		return cm.items, -1, true
+	} else if cuf.Type == preinld.ConvTitleChanged {
+		dataPretty, _ := json.Fmt(cuf.Data)
+
+		lg.Debug().Msgf("start handle conv title change event, data=%s", string(dataPretty))
+
+		cm.rw.Lock()
+		defer cm.rw.Unlock()
+
+		idx, ok := cm.id2idx[convId]
+		if ok {
+			dataMap := cuf.Data
+			title, ok := dataMap["title"].(string)
+			if ok {
+				convItem := cm.items[idx]
+
+				updateReason, ok := dataMap["updateReason"].(string)
+				if ok {
+					if updateReason == preinld.UserActiveSettingGroupBak {
+						// 无条件更新
+						convItem.Title = title
+					} else if updateReason == preinld.SomeOneModifyGroupName {
+						grpData := cm.gm.FetchGroupData(convItem.RelationId)
+						if nil != grpData {
+							// 用户没有设置组备注, 才更新
+							if grpData.GroupBak == "" {
+								convItem.Title = title
+							}
+						}
+
+					}
+				}
+
+				//cm.gm.ModifyGroupName(convItem.RelationId, title)
+			}
+			return cm.items, idx, true
+		}
+
 	}
 
 	return nil, -1, false

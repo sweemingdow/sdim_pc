@@ -6,8 +6,24 @@ export function FetchGroupData(arg1) {
   return window['go']['groupbinder']['GroupBinder']['FetchGroupData'](arg1);
 }
 
+export function GroupAddMembers(arg1, arg2) {
+  return window['go']['groupbinder']['GroupBinder']['GroupAddMembers'](arg1, arg2);
+}
+
+export function GroupRemMembers(arg1, arg2) {
+  return window['go']['groupbinder']['GroupBinder']['GroupRemMembers'](arg1, arg2);
+}
+
+export function SettingGroupBak(arg1, arg2) {
+  return window['go']['groupbinder']['GroupBinder']['SettingGroupBak'](arg1, arg2);
+}
+
 export function SettingGroupName(arg1, arg2) {
   return window['go']['groupbinder']['GroupBinder']['SettingGroupName'](arg1, arg2);
+}
+
+export function SettingNicknameInGroup(arg1, arg2) {
+  return window['go']['groupbinder']['GroupBinder']['SettingNicknameInGroup'](arg1, arg2);
 }
 
 export function StarGroupChat(arg1) {

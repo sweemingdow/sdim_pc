@@ -27,6 +27,7 @@ type App struct {
 	cli *client.Client
 	fh  *frmhandler.FrameHandler
 	cm  *chat.ConvManager
+	gm  *chat.GroupManager
 	ci  *convapi.ConvApi
 	ui  *userapi.UserApi
 	mi  *msgapi.MsgApi
@@ -41,7 +42,8 @@ func NewApp(cfg config.Config) (*App, error) {
 		return nil, err
 	}
 
-	cm := chat.NewConvManager()
+	gm := chat.NewGroupManager()
+	cm := chat.NewConvManager(gm)
 	sender := unet.NewHttpSender(cfg.HttpReqCfg)
 
 	ci := convapi.NewConvApi(cfg, sender)
@@ -49,13 +51,14 @@ func NewApp(cfg config.Config) (*App, error) {
 	mi := msgapi.NewMsgApi(cfg, sender)
 	gi := groupapi.NewGroupApi(cfg, sender)
 
-	fh := frmhandler.NewFrameHandler(cli.GetFrameChan(), cm, ci)
+	fh := frmhandler.NewFrameHandler(cli.GetFrameChan(), cm, gm, ci)
 
 	app := &App{
 		cfg: cfg,
 		cli: cli,
 		fh:  fh,
 		cm:  cm,
+		gm:  gm,
 		ci:  ci,
 		ui:  ui,
 		mi:  mi,
@@ -152,6 +155,7 @@ func (a *App) Disconnect() error {
 	user.Reset()
 
 	a.cm.ResetWhileDisconnected()
+	a.gm.ResetWhileDisconnected()
 
 	a.cm.EmitConvListUpdateEvent(make([]*chat.ConvItem, 0), -1)
 

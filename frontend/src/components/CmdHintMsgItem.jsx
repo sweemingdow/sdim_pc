@@ -8,7 +8,14 @@ const CmdHintMsgItem = ({msg}) => {
     const extractText = () => {
         if (content.subCmd === 1001) {
             return content.inviteContent.inviteHint
+        } else if (content.subCmd === 1002) {
+            return content.settingContent.settingHint
+        } else if (content.subCmd === 1003) {
+            return content.addContent.addHint
+        } else if (content.subCmd === 1004) {
+            return content.removeContent.remHint
         }
+
 
         return ""
     }
@@ -17,27 +24,25 @@ const CmdHintMsgItem = ({msg}) => {
         return {display: msg.timeShow ? 'block' : 'none'}
     }
 
-    return (
-        <div className="msg-item-outer">
-            <div
-                style={timeEleStyle()}
-                className="msg-item-time">
-                {msg.timeText}
-            </div>
-            <div style={{
-                boxSizing: "border-box",
-                marginRight: 18,
-                display: "flex",
-                marginBottom: 8,
-                minHeight: 34,
-                justifyContent: "center",
-                alignItems: "center"
-            }}>
-                <div style={{color: "#9E9E9E", fontSize: 12}}>{extractText()}</div>
-            </div>
-
+    return (<div className="msg-item-outer">
+        <div
+            style={timeEleStyle()}
+            className="msg-item-time">
+            {msg.timeText}
         </div>
-    )
+        <div style={{
+            boxSizing: "border-box",
+            marginRight: 18,
+            display: "flex",
+            marginBottom: 8,
+            minHeight: 34,
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{color: "#9E9E9E", fontSize: 12}}>{extractText()}</div>
+        </div>
+
+    </div>)
 }
 
 export default CmdHintMsgItem

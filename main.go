@@ -71,7 +71,7 @@ func main() {
 			userbinder.NewUserBinder(app.ui),
 			msgbinder.NewMsgBinder(app.mi, app.cm),
 			convbinder.NewConvBinder(app.ci, app.cm),
-			groupbinder.NewGroupBinder(app.gi, app.cm),
+			groupbinder.NewGroupBinder(app.gi, app.cm, app.gm),
 		),
 	})
 

@@ -45,10 +45,15 @@ const ConvItem = ({convItem, onClick}) => {
                         return msg.content.content.text
                     } else {
                         if (msg.content.type === 1000) { // 命令消息
-                            if (msg.content.content.subCmd === 1001) {// 邀请进群提示
-                                if (msg.content.content.inviteContent) {
-                                    return msg.content.content.inviteContent.inviteHint
-                                }
+                            const subCmd = msg.content.content.subCmd
+                            if (subCmd === 1001) {// 邀请进群提示
+                                return msg.content.content?.inviteContent?.inviteHint
+                            } else if (subCmd === 1002) { // 修改群名称
+                                return msg.content.content?.settingContent?.settingHint
+                            } else if (subCmd === 1003) { // 添加群聊
+                                return msg.content.content?.addContent?.addHint
+                            } else if (subCmd === 1004) { // 移出群聊
+                                return msg.content.content?.removeContent?.remHint
                             }
                         }
                     }
