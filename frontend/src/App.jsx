@@ -127,6 +127,26 @@ function App() {
         }
     }, [])
 
+    useEffect(() => {
+        const unSubGlobalHintEvent = EventsOn("event_backend:global_hint", data => {
+            // console.log(`receive global_hint event, data=${JSON.stringify(data)}`)
+
+            if (!data) {
+                return
+            }
+
+            const {errCode, msg, level} = data
+            if (level === "info") {
+                messageApi.info(`[code=${errCode}]: ${msg}`)
+            } else if (level === "warn") {
+                messageApi.warning(`[code=${errCode}]: ${msg}`)
+            } else if (level === "error") {
+                messageApi.error(`[code=${errCode}]: ${msg}`)
+            }
+        })
+        return () => unSubGlobalHintEvent()
+    }, [])
+
     // 主动连接
     const connWithActive = async (uid) => {
         setConnState(2)
@@ -397,7 +417,7 @@ function App() {
                     }}>
 
                         <div style={{
-                            boxSizing:"border-box",
+                            boxSizing: "border-box",
                             position: "absolute",
                             width: 248,
                             height: '100%',

@@ -42,8 +42,19 @@ const GroupSideCurtain = ({convItem, messageApi}) => {
             }
         })
 
+        const unsubGroupMebChangeEvents = EventsOn(
+            "event_backend:group_member_changed",
+            groupNo => {
+                if (convItem?.relationId === groupNo) {
+                    (async () => {
+                        await fetchGroupData(groupNo)
+                    })();
+                }
+            })
+
         return () => {
             unSubGroupNicknameModifyEvent()
+            unsubGroupMebChangeEvents()
         }
     }, [])
 
@@ -180,6 +191,8 @@ const GroupSideCurtain = ({convItem, messageApi}) => {
 
 
     const renderAddModelFoot = (isAdd) => {
+        const groupNo = convItem.relationId
+
         return (<div style={{
             display: "flex", flexDirection: "row", justifyContent: "end", alignItems: "center", marginTop: 24,
         }}>
@@ -198,7 +211,6 @@ const GroupSideCurtain = ({convItem, messageApi}) => {
                 className="chat-modal-btn"
                 style={{width: 100}}
                 onClick={async () => {
-                    const groupNo = convItem.groupNo
                     if (isAdd) {
                         // 添加群成员
                         setGroupMebAddModalShow(false);
@@ -267,6 +279,7 @@ const GroupSideCurtain = ({convItem, messageApi}) => {
                     const isChecked = selectedIdSet.has(item.uid);
                     return (
                         <div
+                            key={item.id}
                             className="rem-item"
                             onClick={
                                 () => {

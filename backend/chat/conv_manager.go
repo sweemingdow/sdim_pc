@@ -522,6 +522,7 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 					if updateReason == preinld.UserActiveSettingGroupBak {
 						// 无条件更新
 						convItem.Title = title
+						//cm.gm.ModifyGroupName(convItem.RelationId, title)
 					} else if updateReason == preinld.SomeOneModifyGroupName {
 						grpData := cm.gm.FetchGroupData(convItem.RelationId)
 						if nil != grpData {
@@ -529,12 +530,13 @@ func (cm *ConvManager) UpdateWhenConvUpdate(cuf *preinld.ConvUpdateFrame) ([]*Co
 							if grpData.GroupBak == "" {
 								convItem.Title = title
 							}
+
+							cm.gm.ModifyGroupName(convItem.RelationId, title)
 						}
 
 					}
 				}
 
-				//cm.gm.ModifyGroupName(convItem.RelationId, title)
 			}
 			return cm.items, idx, true
 		}
@@ -624,7 +626,7 @@ func (cm *ConvManager) UpdateMsgWhenSentFailed(saf preinld.SendFrameAck) ([]*Con
 
 	lastMsg.MsgId = ackBody.MsgId
 	lastMsg.State = uint8(SendFailed)
-	lastMsg.LastFailReason = fmt.Sprintf("[errCode=%d]-[errDesc=%s]", saf.ErrCode, saf.ErrDesc)
+	lastMsg.LastFailReason = fmt.Sprintf("[respCode=%d]-[errCode=%s]-[errMsg=%s]", saf.RespCode, saf.ErrCode, saf.ErrMsg)
 
 	return cm.items, idx, true
 }

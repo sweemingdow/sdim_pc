@@ -46,8 +46,9 @@ type (
 	}
 
 	ConnAckFrame struct {
-		ErrCode  ErrCode `json:"errCode,omitempty"`
-		ErrDesc  string  `json:"errDesc,omitempty"`
+		RespCode ErrCode `json:"respCode,omitempty"`
+		ErrCode  string  `json:"errCode,omitempty"`
+		ErrMsg   string  `json:"errMsg,omitempty"`
 		TimeDiff int64   `json:"timeDiff"` // 客户端和服务器之间的时差
 		SignKey  string  `json:"signKey,omitempty"`
 	}
@@ -69,9 +70,10 @@ type (
 	}
 
 	SendFrameAck struct {
-		ErrCode ErrCode          `json:"errCode,omitempty"`
-		ErrDesc string           `json:"errDesc,omitempty"`
-		Data    SendAckFrameBody `json:"data,omitempty"`
+		RespCode ErrCode          `json:"respCode,omitempty"`
+		ErrCode  string           `json:"errCode,omitempty"`
+		ErrMsg   string           `json:"errMsg,omitempty"`
+		Data     SendAckFrameBody `json:"data,omitempty"`
 	}
 
 	SendAckFrameBody struct {

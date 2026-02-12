@@ -2,6 +2,7 @@ package chat
 
 import (
 	"sdim_pc/backend/preinld"
+	"sdim_pc/backend/utils/usli"
 	"sync"
 )
 
@@ -82,6 +83,20 @@ func (m *GroupManager) ModifyGroupBak(groupNo, groupBak string) *GroupData {
 	}
 
 	return nil
+}
+
+func (m *GroupManager) OnMebBeKicked(groupNo string, removeUids []string) bool {
+	m.rw.Lock()
+	defer m.rw.Unlock()
+
+	if item, ok := m.groupNo2items[groupNo]; ok {
+		item.MembersInfo = usli.Diff(item.MembersInfo, removeUids, func(item GroupMebItem) string {
+			return item.Uid
+		})
+		return true
+	}
+
+	return false
 }
 
 func (m *GroupManager) ResetWhileDisconnected() {

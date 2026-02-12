@@ -10,7 +10,9 @@ import (
 	"sdim_pc/backend/client/frm"
 	"sdim_pc/backend/mylog"
 	"sdim_pc/backend/preinld"
+	"sdim_pc/backend/preinld/respcode"
 	"sdim_pc/backend/utils/parser/json"
+	"sdim_pc/backend/utils/usli"
 	"sync/atomic"
 )
 
@@ -101,8 +103,11 @@ func (fh *FrameHandler) handleFrame(frame *frm.Frame) {
 		// 模拟发送耗时
 		//time.Sleep(2500 * time.Millisecond)
 
-		if !preinld.IsOk(saf.ErrCode) {
-			lg.Warn().Msgf("send frame ack errCode is not ok, errCode=%d, errDesc:%s", saf.ErrCode, saf.ErrDesc)
+		if !preinld.IsOk(saf.RespCode) {
+			lg.Warn().Msgf("send frame ack response not ok, respCode=%d, errCode=%s, errMsg:%s", saf.RespCode, saf.ErrCode, saf.ErrMsg)
+			if saf.ErrCode == respcode.GroupMebBeKicked {
+				sendGlobalHint(respcode.GroupMebBeKicked, saf.ErrMsg, "error")
+			}
 			items, idx, ok := fh.cm.UpdateMsgWhenSentFailed(saf)
 			if ok {
 				fh.cm.EmitConvListUpdateEvent(items, idx)
@@ -167,7 +172,21 @@ func (fh *FrameHandler) handleFrame(frame *frm.Frame) {
 			} else if subType == preinld.GroupAddMembers {
 				println("GroupAddMembers")
 			} else if subType == preinld.GroupRemoveMembers {
-				println("GroupRemoveMembers")
+				var (
+					/*convId,*/ groupNo string
+					removedUids         []string
+				)
+				//convId, _ = frmPd.Data["convId"].(string)
+				groupNo, _ = frmPd.Data["groupNo"].(string)
+				removedUidsVal, _ := frmPd.Data["removedUids"].([]any)
+				removedUids = usli.Conv(removedUidsVal, func(val any) string {
+					v, _ := val.(string)
+					return v
+				})
+
+				fh.gm.OnMebBeKicked(groupNo, removedUids)
+
+				runtime.EventsEmit(appctx.GetAppCtx(), "event_backend:group_member_changed", groupNo)
 			}
 		}
 	}
@@ -177,4 +196,16 @@ func (fh *FrameHandler) submitTask(run func()) {
 	if err := fh.pool.Submit(run); err == ants.ErrPoolOverload {
 		mylog.GetLogger().Error().Err(err).Msg("too many tasks, check pls")
 	}
+}
+
+func sendGlobalHint(errCode, msg, level string) {
+	runtime.EventsEmit(
+		appctx.GetAppCtx(),
+		"event_backend:global_hint",
+		map[string]any{
+			"errCode": errCode,
+			"msg":     msg,
+			"level":   level,
+		},
+	)
 }

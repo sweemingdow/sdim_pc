@@ -12,6 +12,7 @@ import (
 	"sdim_pc/backend/client/frm"
 	"sdim_pc/backend/mylog"
 	preinld "sdim_pc/backend/preinld"
+	"sdim_pc/backend/preinld/respcode"
 	"sdim_pc/backend/user"
 	"sdim_pc/backend/utils"
 	"sync"
@@ -129,8 +130,16 @@ func (c *Client) Connect(uid string, cType uint8) error {
 		return fmt.Errorf("parse conn ack body failed: %w", err)
 	}
 
-	if !preinld.IsOk(caf.ErrCode) {
-		return fmt.Errorf("conn ack frame not ok, errCode=%d, errDesc=%s", caf.ErrCode, caf.ErrDesc)
+	if !preinld.IsOk(caf.RespCode) {
+		mylog.GetLogger().Warn().Msgf("conn ack frame not ok, respCode=%d, errCode=%s, errMsg=%s", caf.RespCode, caf.ErrCode, caf.ErrMsg)
+		// todo errCode分支判断
+		if caf.ErrCode == respcode.UserNotExists {
+			return errors.New(fmt.Sprintf("[code=%s]: %s", caf.ErrCode, caf.ErrMsg))
+		} else if caf.ErrCode == respcode.UserFrozen {
+			return errors.New(fmt.Sprintf("[code=%s]: %s", caf.ErrCode, caf.ErrMsg))
+		} else if caf.ErrCode == respcode.UserUnregister {
+			return errors.New(fmt.Sprintf("[code=%s]: %s", caf.ErrCode, caf.ErrMsg))
+		}
 	}
 
 	c.mu.Lock()

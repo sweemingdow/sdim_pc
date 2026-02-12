@@ -88,8 +88,8 @@ func _cmdGroupSettingHandler(content map[string]any, myUid string) {
 
 func _cmdGroupRemMembersHandler(content map[string]any, myUid string) {
 	realContent, _ := content["removeContent"].(map[string]any)
-	fmtItems, _ := content["groupRemItems"].([]any)
-	hint, _ := content["remHint"].(string)
+	fmtItems, _ := realContent["groupRemItems"].([]any)
+	hint, _ := realContent["remHint"].(string)
 
 	for idx, val := range fmtItems {
 		m, _ := val.(map[string]any)
@@ -107,8 +107,8 @@ func _cmdGroupRemMembersHandler(content map[string]any, myUid string) {
 
 func _cmdGroupAddMembersHandler(content map[string]any, myUid string) {
 	realContent, _ := content["addContent"].(map[string]any)
-	fmtItems, _ := content["groupAddItems"].([]any)
-	hint, _ := content["addHint"].(string)
+	fmtItems, _ := realContent["groupAddItems"].([]any)
+	hint, _ := realContent["addHint"].(string)
 
 	for idx, val := range fmtItems {
 		m, _ := val.(map[string]any)
