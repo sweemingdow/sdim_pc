@@ -1,6 +1,7 @@
 package groupbinder
 
 import (
+	"errors"
 	"sdim_pc/backend/api/groupapi"
 	"sdim_pc/backend/chat"
 	"sdim_pc/backend/mylog"
@@ -151,7 +152,12 @@ func (b *GroupBinder) SettingNicknameInGroup(groupNo, nickname string) error {
 }
 
 // 添加群成员
-func (b *GroupBinder) GroupAddMembers(groupNo string, members []string) error {
+func (b *GroupBinder) GroupAddMembers(groupNo string, addUids string) error {
+	members := strings.Split(addUids, ",")
+	if len(members) == 0 {
+		return errors.New("addUids was empty")
+	}
+
 	uid := user.GetUid()
 	mylog.GetLogger().Debug().Msgf("start add group members, uid=%s, groupNo=%s, uids=%v", groupNo, uid, members)
 

@@ -22,7 +22,7 @@ const {TextArea} = Input;
 const GroupSideCurtain = ({convItem, messageApi}) => {
     const [groupMebAddModalShow, setGroupMebAddModalShow] = useState(false);
     const [mebAdding, setMebAdding] = useState(false)
-    const [addUids, setAdUids] = useState("")
+    const [addUids, setAddUids] = useState("")
 
     const [groupMebRemModalShow, setGroupMebRemModalShow] = useState(false);
     const [mebRemoving, setMebRemoving] = useState(false)
@@ -218,9 +218,9 @@ const GroupSideCurtain = ({convItem, messageApi}) => {
                         setMebAdding(false)
 
                         try {
-                            await GroupAddMembers()
+                            await GroupAddMembers(groupNo, addUids)
                         } catch (e) {
-                            messageApi.error(`group add members failed, groupNo=${groupNo}, uids=${selectedIds}, e=${e}`)
+                            messageApi.error(`group add members failed, groupNo=${groupNo}, uids=${addUids}, e=${e}`)
                         }
                     } else {
                         // 移出群成员
@@ -248,7 +248,7 @@ const GroupSideCurtain = ({convItem, messageApi}) => {
         }}>
             <TextArea
                 value={addUids}
-                onChange={e => setAdUids(e.target.value)}
+                onChange={e => setAddUids(e.target.value)}
                 placeholder="Input Users For Add To Group(Like: u1;u2;u3)"
                 style={{
                     boxShadow: 'none',

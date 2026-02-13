@@ -5,7 +5,7 @@ import {groupbinder} from '../models';
 
 export function FetchGroupData(arg1:string):Promise<groupapi.GroupDataResp>;
 
-export function GroupAddMembers(arg1:string,arg2:Array<string>):Promise<void>;
+export function GroupAddMembers(arg1:string,arg2:string):Promise<void>;
 
 export function GroupRemMembers(arg1:string,arg2:Array<string>):Promise<void>;
 
